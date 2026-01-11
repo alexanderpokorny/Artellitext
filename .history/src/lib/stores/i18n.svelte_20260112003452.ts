@@ -178,7 +178,6 @@ export const translations = {
 		
 		// Dashboard
 		'dashboard.welcome': 'Welcome back, {name}',
-		'dashboard.statistics': 'Statistics',
 		'dashboard.recentNotes': 'Recent Notes',
 		'dashboard.recentDocs': 'Recent Documents',
 		'dashboard.quickActions': 'Quick Actions',
@@ -304,7 +303,6 @@ export const translations = {
 		
 		// Simplified - would have full translations in production
 		'dashboard.welcome': 'Bienvenue, {name}',
-		'dashboard.statistics': 'Statistiques',
 		'dashboard.recentNotes': 'Notes récentes',
 		'dashboard.recentDocs': 'Documents récents',
 		'dashboard.quickActions': 'Actions rapides',
@@ -430,7 +428,6 @@ export const translations = {
 		
 		// Simplified - would have full translations in production
 		'dashboard.welcome': 'Bienvenido, {name}',
-		'dashboard.statistics': 'Estadísticas',
 		'dashboard.recentNotes': 'Notas recientes',
 		'dashboard.recentDocs': 'Documentos recientes',
 		'dashboard.quickActions': 'Acciones rápidas',
@@ -556,7 +553,6 @@ export const translations = {
 		
 		// Simplified for initial implementation
 		'dashboard.welcome': 'Bentornato, {name}',
-		'dashboard.statistics': 'Statistiche',
 		'dashboard.recentNotes': 'Note recenti',
 		'dashboard.recentDocs': 'Documenti recenti',
 		'dashboard.quickActions': 'Azioni rapide',

@@ -42,14 +42,14 @@
 	<section class="stats-section">
 		<h2 class="section-title">{i18n.t('dashboard.statistics')}</h2>
 		<div class="stats-grid">
-			<div class="stat-card">
-				<span class="stat-value">{stats.notes}</span>
-				<span class="stat-label">{i18n.t('dashboard.stats.notes')}</span>
-			</div>
-			<div class="stat-card">
-				<span class="stat-value">{stats.documents}</span>
-				<span class="stat-label">{i18n.t('dashboard.stats.documents')}</span>
-			</div>
+		<div class="stat-card">
+			<span class="stat-value">{stats.notes}</span>
+			<span class="stat-label">{i18n.t('dashboard.stats.notes')}</span>
+		</div>
+		<div class="stat-card">
+			<span class="stat-value">{stats.documents}</span>
+			<span class="stat-label">{i18n.t('dashboard.stats.documents')}</span>
+		</div>
 			<div class="stat-card">
 				<span class="stat-value">{stats.storage}</span>
 				<span class="stat-label">{i18n.t('dashboard.stats.storage')}</span>
