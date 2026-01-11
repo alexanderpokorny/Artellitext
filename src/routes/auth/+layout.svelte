@@ -27,8 +27,18 @@
 	<!-- Minimal Header with Theme/Language -->
 	<header class="auth-layout-header">
 		<div class="auth-layout-controls">
-			<LanguageSelector />
-			<ThemeSelector />
+			<LanguageSelector
+				language={i18n.language}
+				supportedLanguages={i18n.supportedLanguages}
+				onSelect={i18n.setLanguage}
+				compact
+			/>
+			<ThemeSelector
+				theme={themeStore.theme}
+				effectiveTheme={themeStore.effectiveTheme}
+				onSelect={themeStore.setTheme}
+				t={i18n.t}
+			/>
 		</div>
 	</header>
 	

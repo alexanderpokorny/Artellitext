@@ -164,14 +164,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 			});
 		}
 	}
-		
-		// For page routes, redirect to auth with return URL
-		const returnUrl = encodeURIComponent(path);
-		return new Response(null, {
-			status: 302,
-			headers: { Location: `/auth?returnUrl=${returnUrl}` },
-		});
-	}
 	
 	// Continue to route handler
 	const response = await resolve(event);
