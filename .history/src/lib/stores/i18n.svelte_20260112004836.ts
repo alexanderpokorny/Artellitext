@@ -562,12 +562,9 @@ export const translations = {
 		'auth.forgotPassword': 'Password dimenticata?',
 		'auth.noAccount': 'Non hai un account?',
 		'auth.hasAccount': 'Hai già un account?',
-		'auth.orContinueWith': 'oppure',
 		'auth.loginError': 'Accesso fallito. Controlla le tue credenziali.',
 		'auth.registerError': 'Registrazione fallita. Riprova.',
 		'auth.registerSuccess': 'Account creato con successo. Ora puoi accedere.',
-		'auth.subscriptionRequired': 'È richiesto un abbonamento attivo.',
-		'auth.subscriptionExpired': 'Il tuo abbonamento è scaduto.',
 		
 		// Simplified for initial implementation
 		'dashboard.welcome': 'Bentornato, {name}',

@@ -433,12 +433,9 @@ export const translations = {
 		'auth.forgotPassword': '¿Olvidaste tu contraseña?',
 		'auth.noAccount': '¿No tienes cuenta?',
 		'auth.hasAccount': '¿Ya tienes cuenta?',
-		'auth.orContinueWith': 'o',
 		'auth.loginError': 'Error al iniciar sesión. Por favor verifica tus datos.',
 		'auth.registerError': 'Error al registrarse. Por favor intenta de nuevo.',
 		'auth.registerSuccess': 'Cuenta creada exitosamente. Ya puedes iniciar sesión.',
-		'auth.subscriptionRequired': 'Se requiere una suscripción activa.',
-		'auth.subscriptionExpired': 'Tu suscripción ha expirado.',
 		
 		// Simplified - would have full translations in production
 		'dashboard.welcome': 'Bienvenido, {name}',
@@ -562,12 +559,9 @@ export const translations = {
 		'auth.forgotPassword': 'Password dimenticata?',
 		'auth.noAccount': 'Non hai un account?',
 		'auth.hasAccount': 'Hai già un account?',
-		'auth.orContinueWith': 'oppure',
 		'auth.loginError': 'Accesso fallito. Controlla le tue credenziali.',
 		'auth.registerError': 'Registrazione fallita. Riprova.',
 		'auth.registerSuccess': 'Account creato con successo. Ora puoi accedere.',
-		'auth.subscriptionRequired': 'È richiesto un abbonamento attivo.',
-		'auth.subscriptionExpired': 'Il tuo abbonamento è scaduto.',
 		
 		// Simplified for initial implementation
 		'dashboard.welcome': 'Bentornato, {name}',

@@ -109,18 +109,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// Check route protection
 	const path = event.url.pathname;
 	
-	// Redirect authenticated users with valid subscription away from auth pages
+	// Redirect authenticated users away from auth pages
 	if (AUTH_ROUTES.some(route => path.startsWith(route)) && event.locals.user) {
-		if (hasValidSubscription(event.locals.user)) {
-			return new Response(null, {
-				status: 302,
-				headers: { Location: '/' },
-			});
-		}
+		return new Response(null, {
+			status: 302,
+			headers: { Location: '/' },
+		});
 	}
-	
-	// Check if route is auth-only (no subscription check)
-	const isAuthOnlyRoute = AUTH_ONLY_ROUTES.some(route => path.startsWith(route));
 	
 	// Protect authenticated routes
 	if (PROTECTED_ROUTES.some(route => path.startsWith(route)) && !event.locals.user) {
@@ -134,36 +129,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 				}
 			);
 		}
-		
-		// For page routes, redirect to auth with return URL
-		const returnUrl = encodeURIComponent(path);
-		return new Response(null, {
-			status: 302,
-			headers: { Location: `/auth?returnUrl=${returnUrl}` },
-		});
-	}
-	
-	// Check subscription for protected routes (not auth-only routes)
-	if (event.locals.user && !isAuthOnlyRoute && PROTECTED_ROUTES.some(route => path.startsWith(route))) {
-		if (!hasValidSubscription(event.locals.user)) {
-			// For API routes, return 403
-			if (path.startsWith('/api')) {
-				return new Response(
-					JSON.stringify({ error: 'Forbidden', message: 'Valid subscription required' }),
-					{
-						status: 403,
-						headers: { 'Content-Type': 'application/json' },
-					}
-				);
-			}
-			
-			// For page routes, redirect to auth with error
-			return new Response(null, {
-				status: 302,
-				headers: { Location: '/auth?error=subscription_expired' },
-			});
-		}
-	}
 		
 		// For page routes, redirect to auth with return URL
 		const returnUrl = encodeURIComponent(path);

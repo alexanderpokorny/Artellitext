@@ -70,7 +70,6 @@ export interface SessionUser {
 	avatarUrl: string | null;
 	role: UserRole;
 	subscriptionTier: SubscriptionTier;
-	subscriptionExpiresAt: Date | null;
 }
 
 // ===========================================
