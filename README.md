@@ -25,28 +25,75 @@ Eine High-End Webapplikation, die dem Prinzip der „Kognitiven Souveränität" 
 ### Voraussetzungen
 
 - Node.js 22+
-- PostgreSQL 17+ mit pgvector Extension
-- pnpm (empfohlen)
+- Docker (für PostgreSQL mit pgvector)
+- pnpm (empfohlen) oder npm
 
-### Installation
+### Schnellstart (Neuer Computer)
 
 ```bash
-# Repository klonen
+# 1. Repository klonen
 git clone https://github.com/alexanderpokorny/Artellitext.git
 cd Artellitext
 
-# Abhängigkeiten installieren
-pnpm install
+# 2. Abhängigkeiten installieren
+pnpm install   # oder: npm install
 
-# Umgebungsvariablen kopieren
+# 3. Umgebungsvariablen einrichten
 cp .env.example .env
 
-# Datenbank einrichten
-# PostgreSQL mit pgvector Extension starten
-docker compose up -d  # oder manuell
+# 4. PostgreSQL + pgvector mit Docker starten
+# Für Debian/Ubuntu/Chromebook (Crostini):
+chmod +x scripts/docker-postgres.sh
+./scripts/docker-postgres.sh
 
-# Entwicklungsserver starten
-pnpm dev
+# 5. Entwicklungsserver starten
+pnpm dev   # oder: npm run dev
+```
+
+### Datenbank-Setup im Detail
+
+Das Script `scripts/docker-postgres.sh` führt folgende Schritte aus:
+
+1. Installiert Docker (falls nicht vorhanden)
+2. Startet PostgreSQL 17 mit pgvector im Container `pgvector-db`
+3. Erstellt die Datenbank `Artellitext`
+
+**Connection-Details:**
+| Parameter | Wert |
+|-----------|------|
+| Host | `localhost` |
+| Port | `5432` |
+| Database | `Artellitext` |
+| User | `postgres` |
+| Password | `postgres` |
+| Connection String | `postgres://postgres:postgres@localhost:5432/Artellitext` |
+
+**Manuelle Docker-Befehle:**
+```bash
+# Container starten (wenn bereits eingerichtet)
+docker start pgvector-db
+
+# Container stoppen
+docker stop pgvector-db
+
+# In PostgreSQL verbinden
+docker exec -it pgvector-db psql -U postgres -d Artellitext
+
+# Container-Status prüfen
+docker ps -a | grep pgvector
+```
+
+### Auf macOS
+
+```bash
+# Docker Desktop installieren: https://docker.com/products/docker-desktop
+# Dann:
+docker run -d --name pgvector-db \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=Artellitext \
+  -p 5432:5432 \
+  -v pgdata:/var/lib/postgresql/data \
+  pgvector/pgvector:pg17
 ```
 
 ### Font-Installation
