@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="de" data-reading-mode="false">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="description" content="Artellico - Kognitive Denkplattform für akademisches Consulting und Wissensmanagement" />
+		
+		<!--
+		===========================================
+		CRITICAL: THEME + FAVICON INITIALIZATION
+		===========================================
+		
+		This script MUST run FIRST, before ANY CSS loads.
+		It sets:
+		1. data-theme attribute on HTML
+		2. Inline background/text colors  
+		3. Favicon based on BROWSER theme (opposite color)
+		
+		IMPORTANT: Browser theme ≠ App theme
+		- Browser theme determines favicon (opposite color for visibility)
+		- App theme (from localStorage) determines app colors
+		-->
+		<script>
+			(function() {
+				// ===== DETECT BROWSER THEME (for favicon) =====
+				var browserDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+				
+				// ===== DETECT APP THEME (from localStorage or browser preference) =====
+				var stored = localStorage.getItem('artellico_theme');
+				var appTheme;
+				if (stored === 'dark' || stored === 'light') {
+					appTheme = stored;
+				} else if (stored === 'auto' || !stored) {
+					appTheme = browserDark ? 'dark' : 'light';
+				} else {
+					appTheme = browserDark ? 'dark' : 'light';
+				}
+				
+				// ===== SET THEME ATTRIBUTE IMMEDIATELY =====
+				document.documentElement.setAttribute('data-theme', appTheme);
+				document.documentElement.style.colorScheme = appTheme;
+				
+				// ===== CRITICAL COLORS - prevents flash =====
+				// These MUST match app.css exactly!
+				var colors = {
+					light: {
+						bg: '#e8e8e8',
+						sidebar: '#dedede',
+						text: '#171717',
+						border: '#b0b0b0'
+					},
+					dark: {
+						bg: '#0a0a0a',
+						sidebar: '#171717',
+						text: '#fafafa',
+						border: '#404040'
+					}
+				};
+				
+				var c = colors[appTheme];
+				document.documentElement.style.backgroundColor = c.bg;
+				document.documentElement.style.color = c.text;
+				
+				// ===== FAVICON based on BROWSER theme (opposite color) =====
+				// Dark browser = light favicon, Light browser = dark favicon
+				var faviconColor = browserDark ? 'light' : 'dark';
+				
+				// Store themes for later use by Svelte
+				window.__BROWSER_THEME__ = browserDark ? 'dark' : 'light';
+				window.__APP_THEME__ = appTheme;
+				window.__FAVICON_COLOR__ = faviconColor;
+			})();
+		</script>
+		
+		<!-- Meta theme-color for browser UI -->
+		<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+		<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+		
+		<!--
+		===========================================
+		CRITICAL CSS - Inline styles that load BEFORE app.css
+		===========================================
+		
+		These styles prevent ANY flash of unstyled content.
+		They set the basic colors and layout structure.
+		
+		IMPORTANT: These values MUST match app.css exactly!
+		-->
+		<style>
+			/* ===== BASE RESET ===== */
+			*, *::before, *::after {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+			
+			/* ===== HTML/BODY - Light Mode Default ===== */
+			html {
+				background-color: #e8e8e8;
+				color: #171717;
+				font-family: 'EB Garamond', Georgia, serif;
+				font-size: 16px;
+				line-height: 1.5;
+				-webkit-font-smoothing: antialiased;
+				-moz-osx-font-smoothing: grayscale;
+			}
+			
+			/* ===== HTML/BODY - Dark Mode ===== */
+			html[data-theme="dark"] {
+				background-color: #0a0a0a;
+				color: #fafafa;
+			}
+			
+			body {
+				margin: 0;
+				padding: 0;
+				min-height: 100vh;
+				background: inherit;
+				color: inherit;
+			}
+			
+			/* ===== CRITICAL LAYOUT - Grid structure ===== */
+			.app-layout {
+				display: grid;
+				height: 100vh;
+				width: 100vw;
+				overflow: hidden;
+				background: inherit;
+				grid-template-columns: 260px 1fr;
+				grid-template-rows: 60px 1fr 40px;
+				grid-template-areas: 
+					"sidebar-header  main-header"
+					"sidebar-nav     main-content"
+					"sidebar-footer  main-footer";
+			}
+			
+			/* ===== SIDEBAR - Light Mode ===== */
+			.sidebar-header,
+			.sidebar-nav,
+			.sidebar-footer {
+				background: #dedede;
+				border-right: 1px solid #b0b0b0;
+			}
+			
+			.sidebar-header {
+				border-bottom: 1px solid #b0b0b0;
+			}
+			
+			.sidebar-footer {
+				border-top: 1px solid #b0b0b0;
+			}
+			
+			/* ===== SIDEBAR - Dark Mode ===== */
+			html[data-theme="dark"] .sidebar-header,
+			html[data-theme="dark"] .sidebar-nav,
+			html[data-theme="dark"] .sidebar-footer {
+				background: #171717;
+				border-right-color: #404040;
+			}
+			
+			html[data-theme="dark"] .sidebar-header {
+				border-bottom-color: #404040;
+			}
+			
+			html[data-theme="dark"] .sidebar-footer {
+				border-top-color: #404040;
+			}
+			
+			/* ===== MAIN CONTENT - Light Mode ===== */
+			.main-content {
+				background: #e8e8e8;
+				padding: 36px;
+				overflow-y: auto;
+			}
+			
+			/* ===== MAIN CONTENT - Dark Mode ===== */
+			html[data-theme="dark"] .main-content {
+				background: #0a0a0a;
+			}
+			
+			/* ===== HEADER/FOOTER - Light Mode ===== */
+			.main-header {
+				background: #dedede;
+				border-bottom: 1px solid #b0b0b0;
+			}
+			
+			.main-footer {
+				background: #dedede;
+				border-top: 1px solid #b0b0b0;
+			}
+			
+			/* ===== HEADER/FOOTER - Dark Mode ===== */
+			html[data-theme="dark"] .main-header {
+				background: #171717;
+				border-bottom-color: #404040;
+			}
+			
+			html[data-theme="dark"] .main-footer {
+				background: #171717;
+				border-top-color: #404040;
+			}
+			
+			/* ===== CARDS/ELEVATED SURFACES - Light Mode ===== */
+			.stat-card,
+			.action-card,
+			.note-card {
+				background: #f5f5f5;
+				border: 1px solid #b0b0b0;
+			}
+			
+			/* ===== CARDS/ELEVATED SURFACES - Dark Mode ===== */
+			html[data-theme="dark"] .stat-card,
+			html[data-theme="dark"] .action-card,
+			html[data-theme="dark"] .note-card {
+				background: #262626;
+				border-color: #404040;
+			}
+		</style>
+		
+		<!-- Favicon -->
+		<link rel="icon" type="image/x-icon" href="%sveltekit.assets%/favicon.ico" />
+		<link rel="icon" type="image/png" sizes="16x16" href="%sveltekit.assets%/favicon-16x16.png" />
+		<link rel="icon" type="image/png" sizes="32x32" href="%sveltekit.assets%/favicon-32x32.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="%sveltekit.assets%/icons/apple-touch-icon.png" />
+		<link rel="manifest" href="%sveltekit.assets%/manifest.json" />
+		
+		<title>Artellico</title>
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>

@@ -13,8 +13,8 @@
     "db:seed": "node scripts/seed.js"
   },
   "devDependencies": {
-    "@sveltejs/adapter-node": "^5.2.0",
-    "@sveltejs/kit": "^2.20.0",
+    "@sveltejs/adapter-node": "^5.4.0",
+    "@sveltejs/kit": "^2.49.4",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
     "@types/node": "^22.10.0",
     "@types/pg": "^8.11.0",
@@ -24,14 +24,14 @@
     "vite": "^6.0.0"
   },
   "dependencies": {
+    "@editorjs/code": "^2.9.0",
     "@editorjs/editorjs": "^2.30.0",
+    "@editorjs/embed": "^2.7.0",
     "@editorjs/header": "^2.8.0",
+    "@editorjs/image": "^2.9.0",
     "@editorjs/list": "^1.9.0",
     "@editorjs/paragraph": "^2.11.0",
     "@editorjs/quote": "^2.6.0",
-    "@editorjs/code": "^2.9.0",
-    "@editorjs/image": "^2.9.0",
-    "@editorjs/embed": "^2.7.0",
     "katex": "^0.16.0",
     "pg": "^8.13.0",
     "pgvector": "^0.2.0"

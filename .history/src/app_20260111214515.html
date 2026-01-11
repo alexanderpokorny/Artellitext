@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="de">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="description" content="Artellico - Kognitive Denkplattform für akademisches Consulting und Wissensmanagement" />
+		
+		<!--
+		===========================================
+		CRITICAL RENDERING PATH - FOUC PREVENTION
+		===========================================
+		
+		ORDER IS CRITICAL:
+		1. Blocking script sets 'dark' class
+		2. Critical inline CSS applies background colors IMMEDIATELY
+		3. External CSS loads (app.css via SvelteKit)
+		
+		The inline CSS below is the ONLY exception to the 
+		"no inline CSS" rule - it's technically required to
+		prevent flash of white background.
+		===========================================
+		-->
+		
+		<!-- 1. BLOCKING SCRIPT: Sets theme class before ANY rendering -->
+		<script>
+			(function() {
+				// Check localStorage first, then system preference
+				var storedTheme = localStorage.getItem('artellico_theme');
+				var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+				
+				// Determine if dark mode should be applied:
+				// 1. If stored theme is 'dark' → dark
+				// 2. If stored theme is 'auto' → use system preference
+				// 3. If stored theme is 'light' → light (no class)
+				// 4. If no stored theme (first visit) → use system preference
+				var shouldBeDark = false;
+				
+				if (storedTheme === 'dark') {
+					shouldBeDark = true;
+				} else if (storedTheme === 'light') {
+					shouldBeDark = false;
+				} else {
+					// 'auto' or no stored theme → follow system preference
+					shouldBeDark = prefersDark;
+				}
+				
+				if (shouldBeDark) {
+					document.documentElement.classList.add('dark');
+				}
+			})();
+		</script>
+		
+		<!-- 2. CRITICAL INLINE CSS: Background colors ONLY -->
+		<!-- This prevents white flash - colors MUST match app.css! -->
+		<style>
+			/* Light mode (default) */
+			html {
+				background-color: #f5f5f5;
+			}
+			body {
+				background-color: #f5f5f5;
+				margin: 0;
+			}
+			
+			/* Dark mode */
+			html.dark {
+				background-color: #0a0a0a;
+			}
+			html.dark body {
+				background-color: #0a0a0a;
+			}
+		</style>
+		
+		<!-- Theme color for browser chrome -->
+		<meta name="theme-color" content="#f5f5f5" media="(prefers-color-scheme: light)" />
+		<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+		
+		<!-- Preload fonts to prevent FOUT -->
+		<link rel="preload" href="/fonts/EBGaramond-Variable.ttf" as="font" type="font/ttf" crossorigin />
+		<link rel="preload" href="/fonts/SpecialElite-Regular.ttf" as="font" type="font/ttf" crossorigin />
+		
+		<!-- Favicon -->
+		<link rel="icon" type="image/x-icon" href="%sveltekit.assets%/favicon.ico" />
+		<link rel="icon" type="image/png" sizes="16x16" href="%sveltekit.assets%/favicon-16x16.png" />
+		<link rel="icon" type="image/png" sizes="32x32" href="%sveltekit.assets%/favicon-32x32.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="%sveltekit.assets%/icons/apple-touch-icon.png" />
+		<link rel="manifest" href="%sveltekit.assets%/manifest.json" />
+		
+		<title>Artellico</title>
+		
+		<!-- 3. SvelteKit injects external CSS here -->
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="de">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Artellico</title>
+	<meta name="description" content="Artellico - Kognitive Denkplattform">
+	
+	<!-- Theme initialization - MUST be first script, blocking -->
+	<script src="/theme-init.js"></script>
+	
+	<style>
+		@font-face {
+			font-family: 'EB Garamond';
+			src: url('/fonts/EBGaramond-Variable.ttf') format('truetype-variations');
+			font-weight: 400 800;
+			font-style: normal;
+			font-display: block;
+		}
+		@font-face {
+			font-family: 'EB Garamond';
+			src: url('/fonts/EBGaramond-Italic-Variable.ttf') format('truetype-variations');
+			font-weight: 400 800;
+			font-style: italic;
+			font-display: block;
+		}
+		@font-face {
+			font-family: 'Special Elite';
+			src: url('/fonts/SpecialElite-Regular.ttf') format('truetype');
+			font-weight: 400;
+			font-style: normal;
+			font-display: block;
+		}
+		:root {
+			--font-human: 'EB Garamond', Georgia, serif;
+			--font-machine: 'Special Elite', monospace;
+			--font-size-base: 1.0625rem;
+			--color-bg: #f5f5f5;
+			--color-bg-sidebar: #ebebeb;
+			--color-bg-elevated: #ffffff;
+			--color-text: #1a1a1a;
+			--color-text-secondary: #4a4a4a;
+			--color-text-muted: #6a6a6a;
+			--color-border: #999999;
+		}
+		html.dark {
+			--color-bg: #0a0a0a;
+			--color-bg-sidebar: #171717;
+			--color-bg-elevated: #262626;
+			--color-text: #fafafa;
+			--color-text-secondary: #a3a3a3;
+			--color-text-muted: #737373;
+			--color-border: #666666;
+		}
+		/* High Contrast Mode - WCAG AAA, E-Ink compatible */
+		html.high-contrast {
+			--color-bg: #ffffff;
+			--color-bg-sidebar: #ffffff;
+			--color-bg-elevated: #ffffff;
+			--color-text: #000000;
+			--color-text-secondary: #000000;
+			--color-text-muted: #333333;
+			--color-border: #000000;
+		}
+		*, *::before, *::after { box-sizing: border-box; }
+		html {
+			font-size: 16px;
+			-webkit-font-smoothing: antialiased;
+			background-color: var(--color-bg);
+			color: var(--color-text);
+		}
+		/* Theme transition - only active after initial load */
+		html.theme-transition,
+		html.theme-transition *,
+		html.theme-transition *::before,
+		html.theme-transition *::after {
+			transition: background-color 150ms ease, 
+			            color 150ms ease, 
+			            border-color 150ms ease,
+			            fill 150ms ease,
+			            stroke 150ms ease !important;
+		}
+		body {
+			margin: 0;
+			font-family: var(--font-human);
+			font-size: var(--font-size-base);
+			line-height: 1.5;
+			background-color: var(--color-bg);
+			color: var(--color-text);
+		}
+		.app-wrapper {
+			opacity: 0;
+			transition: opacity 0.15s ease;
+		}
+		.app-wrapper.loaded {
+			opacity: 1;
+		}
+	</style>
+	
+	<meta name="theme-color" content="#f5f5f5" media="(prefers-color-scheme: light)">
+	<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
+	
+	<link rel="preload" href="/fonts/EBGaramond-Variable.ttf" as="font" type="font/ttf" crossorigin>
+	<link rel="preload" href="/fonts/SpecialElite-Regular.ttf" as="font" type="font/ttf" crossorigin>
+	
+	<link rel="icon" type="image/x-icon" href="%sveltekit.assets%/favicon.ico">
+	<link rel="manifest" href="%sveltekit.assets%/manifest.json">
+	
+	%sveltekit.head%
+</head>
+<body data-sveltekit-preload-data="hover">
+	<div class="app-wrapper" style="display: contents">%sveltekit.body%</div>
+	<script>
+		requestAnimationFrame(function() {
+			document.querySelector('.app-wrapper').classList.add('loaded');
+		});
+	</script>
+</body>
+</html>

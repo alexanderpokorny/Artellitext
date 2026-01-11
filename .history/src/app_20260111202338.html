@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="de" data-theme="light" data-reading-mode="false">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="description" content="Artellico - Kognitive Denkplattform für akademisches Consulting und Wissensmanagement" />
+		<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+		<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+		
+		<!-- Critical CSS to prevent flash - hide body until theme is applied -->
+		<style>
+			html:not([data-theme-ready]) { visibility: hidden; }
+			html[data-theme-ready] { visibility: visible; }
+		</style>
+		
+		<!-- Blocking script to set theme BEFORE any rendering -->
+		<script>
+			(function() {
+				var stored = localStorage.getItem('artellico_theme');
+				var theme = 'light';
+				if (stored === 'dark') {
+					theme = 'dark';
+				} else if (stored === 'light') {
+					theme = 'light';
+				} else {
+					// Auto or not set: use system preference
+					theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+				}
+				document.documentElement.setAttribute('data-theme', theme);
+				document.documentElement.setAttribute('data-theme-ready', 'true');
+			})();
+		</script>
+		
+		<!-- Favicon -->
+		<link rel="icon" type="image/x-icon" href="%sveltekit.assets%/favicon.ico" />
+		<link rel="icon" type="image/png" sizes="16x16" href="%sveltekit.assets%/favicon-16x16.png" />
+		<link rel="icon" type="image/png" sizes="32x32" href="%sveltekit.assets%/favicon-32x32.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="%sveltekit.assets%/icons/apple-touch-icon.png" />
+		<link rel="manifest" href="%sveltekit.assets%/manifest.json" />
+		
+		<title>Artellico</title>
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="de" data-reading-mode="false">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="description" content="Artellico - Kognitive Denkplattform für akademisches Consulting und Wissensmanagement" />
+		
+		<!--
+		===========================================
+		CRITICAL: THEME + FAVICON INITIALIZATION
+		===========================================
+		
+		This script MUST run FIRST, before ANY CSS loads.
+		It sets:
+		1. data-theme attribute on HTML
+		2. Inline background/text colors  
+		3. Favicon based on BROWSER theme (opposite color)
+		
+		IMPORTANT: Browser theme ≠ App theme
+		- Browser theme determines favicon (opposite color for visibility)
+		- App theme (from localStorage) determines app colors
+		-->
+		<script>
+			(function() {
+				// ===== DETECT BROWSER THEME (for favicon) =====
+				var browserDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+				
+				// ===== DETECT APP THEME (from localStorage or browser preference) =====
+				var stored = localStorage.getItem('artellico_theme');
+				var appTheme;
+				if (stored === 'dark' || stored === 'light') {
+					appTheme = stored;
+				} else if (stored === 'auto' || !stored) {
+					appTheme = browserDark ? 'dark' : 'light';
+				} else {
+					appTheme = browserDark ? 'dark' : 'light';
+				}
+				
+				// ===== SET THEME ATTRIBUTE IMMEDIATELY =====
+				document.documentElement.setAttribute('data-theme', appTheme);
+				document.documentElement.style.colorScheme = appTheme;
+				
+				// ===== CRITICAL COLORS - prevents flash =====
+				// These MUST match app.css exactly!
+				var colors = {
+					light: {
+						bg: '#e8e8e8',
+						sidebar: '#dedede',
+						text: '#171717',
+						border: '#b0b0b0'
+					},
+					dark: {
+						bg: '#0a0a0a',
+						sidebar: '#171717',
+						text: '#fafafa',
+						border: '#404040'
+					}
+				};
+				
+				var c = colors[appTheme];
+				document.documentElement.style.backgroundColor = c.bg;
+				document.documentElement.style.color = c.text;
+				
+				// ===== FAVICON based on BROWSER theme (opposite color) =====
+				// Dark browser tab = white/light favicon for visibility
+				// Light browser tab = dark favicon for visibility
+				window.addEventListener('DOMContentLoaded', function() {
+					var updateFavicon = function() {
+						var isDarkBrowser = window.matchMedia('(prefers-color-scheme: dark)').matches;
+						// Use opposite color for visibility
+						var iconPath = isDarkBrowser 
+							? '/icons/Artellico Logo White.png'  // Light icon on dark browser
+							: '/icons/Artellico Logo.png';       // Dark icon on light browser
+						
+						// Update all favicon links
+						var favicons = document.querySelectorAll('link[rel*="icon"]');
+						favicons.forEach(function(link) {
+							if (link.href.includes('favicon')) {
+								// Keep the original favicon files
+							}
+						});
+						
+						// Create/update a dynamic favicon
+						var dynamicFavicon = document.getElementById('dynamic-favicon');
+						if (!dynamicFavicon) {
+							dynamicFavicon = document.createElement('link');
+							dynamicFavicon.id = 'dynamic-favicon';
+							dynamicFavicon.rel = 'icon';
+							dynamicFavicon.type = 'image/png';
+							document.head.appendChild(dynamicFavicon);
+						}
+						dynamicFavicon.href = iconPath;
+					};
+					
+					// Initial update
+					updateFavicon();
+					
+					// Listen for browser theme changes
+					window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateFavicon);
+				});
+				
+				// Store themes for later use by Svelte
+				window.__BROWSER_THEME__ = browserDark ? 'dark' : 'light';
+				window.__APP_THEME__ = appTheme;
+			})();
+		</script>
+		
+		<!-- Meta theme-color for browser UI -->
+		<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+		<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+		
+		<!--
+		===========================================
+		CRITICAL CSS - Colors only, NO layout
+		===========================================
+		
+		Layout comes from app.css.
+		These styles ONLY set colors to prevent flash.
+		Using !important to ensure they aren't overridden
+		until app.css fully loads.
+		-->
+		<style>
+			/* ===== BASE - Colors only ===== */
+			html {
+				background-color: #e8e8e8 !important;
+				color: #171717 !important;
+			}
+			
+			html[data-theme="dark"] {
+				background-color: #0a0a0a !important;
+				color: #fafafa !important;
+			}
+			
+			body {
+				background: inherit !important;
+				color: inherit !important;
+			}
+		</style>
+		
+		<!-- Favicon -->
+		<link rel="icon" type="image/x-icon" href="%sveltekit.assets%/favicon.ico" />
+		<link rel="icon" type="image/png" sizes="16x16" href="%sveltekit.assets%/favicon-16x16.png" />
+		<link rel="icon" type="image/png" sizes="32x32" href="%sveltekit.assets%/favicon-32x32.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="%sveltekit.assets%/icons/apple-touch-icon.png" />
+		<link rel="manifest" href="%sveltekit.assets%/manifest.json" />
+		
+		<title>Artellico</title>
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>
