@@ -1,0 +1,186 @@
+/* ==========================================
+   TYPOGRAPHY - EB Garamond & Space Mono
+   Digital Atelier Style
+   ========================================== */
+
+/* Font Face Definitions */
+@font-face {
+    font-family: 'EB Garamond';
+    src: url('../fonts/EBGaramond-Variable.ttf') format('truetype-variations');
+    font-weight: 400 800;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'EB Garamond';
+    src: url('../fonts/EBGaramond-Italic-Variable.ttf') format('truetype-variations');
+    font-weight: 400 800;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Space Mono';
+    src: url('../fonts/SpaceMono-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Space Mono';
+    src: url('../fonts/SpaceMono-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Space Mono';
+    src: url('../fonts/SpaceMono-Italic.ttf') format('truetype');
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* ==========================================
+   TYPOGRAPHY UTILITIES
+   ========================================== */
+
+/* Body text - standard ligatures (fi, fl, ff) */
+p, li, a, .post-content, .post-excerpt, .text-content {
+    font-weight: 400 !important;
+    font-variant-ligatures: normal !important;
+    font-feature-settings: "liga" 1, "dlig" 0, "locl" 0 !important;
+    letter-spacing: normal !important;
+}
+
+/* Headings - full ligatures including discretionary (st) */
+h1, h2, h3, h4, h5, h6, blockquote, .post-title, .hero-title, .headline {
+    font-weight: 400 !important;
+    font-variant-ligatures: common-ligatures discretionary-ligatures !important;
+    font-feature-settings: "liga" 1, "dlig" 1, "locl" 0 !important;
+    letter-spacing: normal !important;
+}
+
+/* Oldstyle Figures for Body */
+.post-content p,
+.post-content li {
+    font-variant-numeric: oldstyle-nums;
+}
+
+/* Lining Figures for Tables and Data */
+table, .post-meta, .post-card-meta {
+    font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* Small Caps */
+.small-caps {
+    font-variant-caps: small-caps;
+    letter-spacing: 0.05em;
+}
+
+/* Drop Cap deaktiviert - keine Initialen im dynamischen Content */
+/*
+.post-content > p:first-of-type::first-letter {
+    float: left;
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 4.5em;
+    line-height: 0.8;
+    padding-right: 0.1em;
+    margin-top: 0.05em;
+    font-weight: 500;
+}
+*/
+
+/* Keine Initialbuchstaben auf Landing Page */
+/*
+.landing-post .post-content > p:first-of-type::first-letter {
+    float: none;
+    font-size: inherit;
+    line-height: inherit;
+    padding-right: 0;
+    margin-top: 0;
+    font-weight: inherit;
+}
+*/
+
+/* ==========================================
+   SPECIAL TYPOGRAPHY ELEMENTS
+   ========================================== */
+
+/* Lead Paragraph */
+.lead,
+.post-excerpt {
+    font-size: 1.25em;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+}
+
+/* Caption Text */
+.caption,
+figcaption {
+    font-family: 'Space Mono', monospace;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin-top: var(--space-sm);
+}
+
+/* Pull Quote */
+.pull-quote {
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: var(--font-size-xl);
+    font-style: italic;
+    text-align: center;
+    padding: var(--space-xl) var(--space-lg);
+    margin: var(--space-2xl) 0;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* Emphasis Styles */
+em {
+    font-style: italic;
+}
+
+strong {
+    font-weight: 600;
+}
+
+/* ==========================================
+   MATHEMATICAL FORMULAS (MathJax)
+   ========================================== */
+
+/* Display Math */
+.MathJax_Display,
+mjx-container[jax="CHTML"][display="true"] {
+    margin: var(--space-xl) 0 !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+/* Inline Math */
+mjx-container[jax="CHTML"]:not([display="true"]) {
+    font-size: 1em !important;
+}
+
+/* Equation Numbers */
+.MJXc-display,
+mjx-container[jax="CHTML"][display="true"] {
+    position: relative;
+}
+
+/* ==========================================
+   SELECTION
+   ========================================== */
+
+::selection {
+    background-color: var(--color-text);
+    color: var(--color-background);
+}
+
+::-moz-selection {
+    background-color: var(--color-text);
+    color: var(--color-background);
+}

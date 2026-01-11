@@ -1,0 +1,59 @@
+# ===========================================
+# Artellico - Git Ignore Configuration
+# ===========================================
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+.svelte-kit/
+build/
+dist/
+
+# Environment variables (secrets!)
+.env
+.env.local
+.env.*.local
+
+# IDE / Editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+*.log
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# TypeScript
+*.tsbuildinfo
+
+# Local development
+*.local
+.cache/
+
+# Fonts (downloaded separately, see README)
+# Uncomment if fonts should not be tracked:
+# static/fonts/*.ttf
+# static/fonts/*.woff
+# static/fonts/*.woff2
+
+# Temporary files
+tmp/
+temp/
+*.tmp
