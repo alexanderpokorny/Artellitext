@@ -25,18 +25,7 @@
 </script>
 
 <div class="auth-page-split">
-	<!-- Controls: Theme/Language in top-right corner -->
-	<div class="auth-controls">
-		<LanguageSelector
-			language={i18n.language}
-			supportedLanguages={i18n.supportedLanguages}
-			onSelect={i18n.setLanguage}
-			compact
-		/>
-		<ThemeToggle onToggle={themeStore.toggle} />
-	</div>
-	
-	<!-- Left: Illustration (2/3) -->
+	<!-- Left: Illustration -->
 	<div class="auth-illustration">
 		<div class="illustration-container">
 			<!-- Library illustration - SVG placeholder for now -->

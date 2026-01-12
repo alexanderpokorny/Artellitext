@@ -1283,11 +1283,5 @@ html.dark .auth-logo {
 	
 	.auth-form-section {
 		padding: var(--space-6);
-		min-height: 100vh;
-	}
-	
-	.auth-controls {
-		top: var(--space-3);
-		right: var(--space-3);
 	}
 }
