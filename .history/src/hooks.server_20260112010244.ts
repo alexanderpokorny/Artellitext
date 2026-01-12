@@ -110,15 +110,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// Check route protection
 	const path = event.url.pathname;
 	
-	// Helper to check if path matches protected routes
-	// For '/' we need exact match, for others we use startsWith
-	const isProtectedRoute = (routePath: string) => {
-		return PROTECTED_ROUTES.some(route => {
-			if (route === '/') return routePath === '/';
-			return routePath.startsWith(route);
-		});
-	};
-	
 	// Redirect authenticated users with valid subscription away from auth pages
 	if (AUTH_ROUTES.some(route => path.startsWith(route)) && event.locals.user) {
 		if (hasValidSubscription(event.locals.user)) {
@@ -133,33 +124,28 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const isAuthOnlyRoute = AUTH_ONLY_ROUTES.some(route => path.startsWith(route));
 	
 	// Protect authenticated routes
-	if (isProtectedRoute(path) && !event.locals.user) {
-		// Skip auth routes
-		if (AUTH_ROUTES.some(route => path.startsWith(route))) {
-			// Don't redirect auth pages
-		} else {
-			// For API routes, return 401
-			if (path.startsWith('/api')) {
-				return new Response(
-					JSON.stringify({ error: 'Unauthorized', message: 'Authentication required' }),
-					{
-						status: 401,
-						headers: { 'Content-Type': 'application/json' },
-					}
-				);
-			}
-			
-			// For page routes, redirect to auth with return URL
-			const returnUrl = encodeURIComponent(path);
-			return new Response(null, {
-				status: 302,
-				headers: { Location: `/auth?returnUrl=${returnUrl}` },
-			});
+	if (PROTECTED_ROUTES.some(route => path.startsWith(route)) && !event.locals.user) {
+		// For API routes, return 401
+		if (path.startsWith('/api')) {
+			return new Response(
+				JSON.stringify({ error: 'Unauthorized', message: 'Authentication required' }),
+				{
+					status: 401,
+					headers: { 'Content-Type': 'application/json' },
+				}
+			);
 		}
+		
+		// For page routes, redirect to auth with return URL
+		const returnUrl = encodeURIComponent(path);
+		return new Response(null, {
+			status: 302,
+			headers: { Location: `/auth?returnUrl=${returnUrl}` },
+		});
 	}
 	
 	// Check subscription for protected routes (not auth-only routes)
-	if (event.locals.user && !isAuthOnlyRoute && isProtectedRoute(path)) {
+	if (event.locals.user && !isAuthOnlyRoute && PROTECTED_ROUTES.some(route => path.startsWith(route))) {
 		if (!hasValidSubscription(event.locals.user)) {
 			// For API routes, return 403
 			if (path.startsWith('/api')) {

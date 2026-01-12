@@ -159,7 +159,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 	
 	// Check subscription for protected routes (not auth-only routes)
-	if (event.locals.user && !isAuthOnlyRoute && isProtectedRoute(path)) {
+	if (event.locals.user && !isAuthOnlyRoute && PROTECTED_ROUTES.some(route => path.startsWith(route))) {
 		if (!hasValidSubscription(event.locals.user)) {
 			// For API routes, return 403
 			if (path.startsWith('/api')) {
