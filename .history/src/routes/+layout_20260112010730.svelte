@@ -304,7 +304,6 @@
 	onLanguageSelect={i18n.setLanguage}
 	t={(key: string, params?: Record<string, string | number>) => i18n.t(key as Parameters<typeof i18n.t>[0], params)}
 />
-{/if}
 
 <style>
 	/* Component-specific styles - Layout Grid is in app.css */

@@ -116,10 +116,6 @@
 	<meta name="description" content="Artellico - Kognitive Denkplattform für akademisches Consulting und Wissensmanagement" />
 </svelte:head>
 
-<!-- Auth routes: Render only children (standalone page) -->
-{#if isAuthRoute}
-	{@render children()}
-{:else}
 <!-- ==========================================
      MAIN APP LAYOUT - CSS Grid 3x2
      
@@ -304,7 +300,6 @@
 	onLanguageSelect={i18n.setLanguage}
 	t={(key: string, params?: Record<string, string | number>) => i18n.t(key as Parameters<typeof i18n.t>[0], params)}
 />
-{/if}
 
 <style>
 	/* Component-specific styles - Layout Grid is in app.css */
