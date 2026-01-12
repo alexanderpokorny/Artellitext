@@ -15,7 +15,7 @@
 	// Determine which theme class to apply
 	if (theme === 'high-contrast' || (theme === 'auto' && systemHighContrast)) {
 		document.documentElement.classList.add('high-contrast');
-	} else if (theme === 'dark' || (theme !== 'light' && theme !== 'high-contrast' && systemDark)) {
+	} else if (theme === 'dark' || (theme === 'auto' && systemDark)) {
 		document.documentElement.classList.add('dark');
 	}
 	// light mode = no class (default)

@@ -73,12 +73,12 @@ function saveTheme(theme: Theme): void {
 }
 
 function loadTheme(): Theme {
-	if (!browser) return 'auto';
+	if (!browser) return 'light';
 	const stored = localStorage.getItem(STORAGE_KEY);
 	if (stored === 'light' || stored === 'dark' || stored === 'high-contrast' || stored === 'auto') {
 		return stored;
 	}
-	return 'auto';
+	return 'light';
 }
 
 function resolveTheme(theme: Theme): EffectiveTheme {
