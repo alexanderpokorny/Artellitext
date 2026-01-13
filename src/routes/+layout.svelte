@@ -161,8 +161,11 @@
 			<span class="search-icon">{@html icons.search}</span>
 			<input
 				type="search"
+				id="global-search"
+				name="search"
 				class="search-input"
 				placeholder={i18n.t('action.search')}
+				autocomplete="off"
 			/>
 		</div>
 		

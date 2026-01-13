@@ -4,7 +4,7 @@
  * Switches favicons based on BROWSER prefers-color-scheme (NOT app theme).
  * This ensures proper contrast: dark icons on light browser, light icons on dark browser.
  * 
- * Must be loaded early in <head> as blocking script.
+ * Loaded in <head>, but waits for DOMContentLoaded to manipulate DOM safely.
  */
 (function() {
     'use strict';
@@ -18,6 +18,7 @@
     function updateFavicons() {
         var dark = isDarkMode();
         var head = document.head;
+        if (!head) return; // Safety check
         
         // Remove all existing favicon links
         var oldLinks = head.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]');
@@ -45,8 +46,13 @@
         });
     }
     
-    // Initial update - run immediately (script is in head, DOM not ready yet)
-    updateFavicons();
+    // Wait for DOM to be ready before manipulating it
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', updateFavicons);
+    } else {
+        // DOM already ready
+        updateFavicons();
+    }
     
     // Watch for browser color scheme changes
     if (window.matchMedia) {
