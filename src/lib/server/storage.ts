@@ -1,8 +1,8 @@
 /**
- * MinIO/S3-Compatible Storage Service
+ * Storage Service with S3/MinIO and Local Fallback
  * 
- * This module provides file storage functionality using MinIO or any S3-compatible storage.
- * Supports upload, download, delete, and presigned URL generation.
+ * Automatically uses local filesystem when S3 is not configured.
+ * This enables offline development without MinIO server.
  */
 
 import {
@@ -18,6 +18,8 @@ import {
 	type GetObjectCommandInput
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 // Environment configuration
 const STORAGE_ENDPOINT = process.env.STORAGE_ENDPOINT || '';
@@ -26,10 +28,237 @@ const STORAGE_ACCESS_KEY = process.env.STORAGE_ACCESS_KEY || '';
 const STORAGE_SECRET_KEY = process.env.STORAGE_SECRET_KEY || '';
 const STORAGE_REGION = process.env.STORAGE_REGION || 'eu-central-1';
 
-// Check if storage is configured
+// Local storage directory (relative to project root)
+const LOCAL_STORAGE_DIR = process.env.LOCAL_STORAGE_DIR || './data/storage';
+
+// Storage mode
+export type StorageMode = 's3' | 'local';
+
+/**
+ * Check if S3 storage is configured
+ */
 export const isStorageConfigured = (): boolean => {
 	return !!(STORAGE_ENDPOINT && STORAGE_ACCESS_KEY && STORAGE_SECRET_KEY);
 };
+
+/**
+ * Get current storage mode
+ */
+export const getStorageMode = (): StorageMode => {
+	return isStorageConfigured() ? 's3' : 'local';
+};
+
+// ===========================================
+// LOCAL STORAGE IMPLEMENTATION
+// ===========================================
+
+/**
+ * Get the full local path for a storage key
+ */
+function getLocalPath(key: string, bucket: string = STORAGE_BUCKET): string {
+	return path.join(LOCAL_STORAGE_DIR, bucket, key);
+}
+
+/**
+ * Ensure local directory exists
+ */
+async function ensureLocalDir(filePath: string): Promise<void> {
+	const dir = path.dirname(filePath);
+	await fs.mkdir(dir, { recursive: true });
+}
+
+/**
+ * Local: Upload a file
+ */
+async function localUploadFile(
+	key: string,
+	body: Buffer | Uint8Array | string,
+	contentType: string,
+	bucket: string = STORAGE_BUCKET,
+	metadata?: Record<string, string>
+): Promise<{ key: string; url: string }> {
+	const filePath = getLocalPath(key, bucket);
+	await ensureLocalDir(filePath);
+	
+	// Write file
+	const buffer = typeof body === 'string' ? Buffer.from(body) : Buffer.from(body);
+	await fs.writeFile(filePath, buffer);
+	
+	// Write metadata
+	const metaPath = `${filePath}.meta.json`;
+	await fs.writeFile(metaPath, JSON.stringify({
+		contentType,
+		metadata,
+		createdAt: new Date().toISOString()
+	}));
+	
+	return {
+		key,
+		url: `/api/storage/${bucket}/${key}`
+	};
+}
+
+/**
+ * Local: Download a file
+ */
+async function localDownloadFile(
+	key: string,
+	bucket: string = STORAGE_BUCKET
+): Promise<{ body: ReadableStream | null; contentType: string | undefined }> {
+	const filePath = getLocalPath(key, bucket);
+	const metaPath = `${filePath}.meta.json`;
+	
+	const buffer = await fs.readFile(filePath);
+	let contentType: string | undefined;
+	
+	try {
+		const meta = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
+		contentType = meta.contentType;
+	} catch {
+		// No metadata file
+	}
+	
+	// Convert Buffer to ReadableStream
+	const stream = new ReadableStream({
+		start(controller) {
+			controller.enqueue(buffer);
+			controller.close();
+		}
+	});
+	
+	return { body: stream, contentType };
+}
+
+/**
+ * Local: Get file as Buffer
+ */
+async function localGetFileAsBuffer(
+	key: string,
+	bucket: string = STORAGE_BUCKET
+): Promise<Buffer> {
+	const filePath = getLocalPath(key, bucket);
+	return fs.readFile(filePath);
+}
+
+/**
+ * Local: Delete a file
+ */
+async function localDeleteFile(
+	key: string,
+	bucket: string = STORAGE_BUCKET
+): Promise<void> {
+	const filePath = getLocalPath(key, bucket);
+	const metaPath = `${filePath}.meta.json`;
+	
+	await fs.unlink(filePath).catch(() => {});
+	await fs.unlink(metaPath).catch(() => {});
+}
+
+/**
+ * Local: Check if file exists
+ */
+async function localFileExists(
+	key: string,
+	bucket: string = STORAGE_BUCKET
+): Promise<boolean> {
+	try {
+		const filePath = getLocalPath(key, bucket);
+		await fs.access(filePath);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Local: Get file metadata
+ */
+async function localGetFileMetadata(
+	key: string,
+	bucket: string = STORAGE_BUCKET
+): Promise<{
+	contentType?: string;
+	contentLength?: number;
+	lastModified?: Date;
+	metadata?: Record<string, string>;
+} | null> {
+	try {
+		const filePath = getLocalPath(key, bucket);
+		const metaPath = `${filePath}.meta.json`;
+		
+		const stat = await fs.stat(filePath);
+		let meta: { contentType?: string; metadata?: Record<string, string> } = {};
+		
+		try {
+			meta = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
+		} catch {
+			// No metadata file
+		}
+		
+		return {
+			contentType: meta.contentType,
+			contentLength: stat.size,
+			lastModified: stat.mtime,
+			metadata: meta.metadata
+		};
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Local: List files
+ */
+async function localListFiles(
+	prefix: string = '',
+	bucket: string = STORAGE_BUCKET
+): Promise<Array<{ key: string; size: number; lastModified: Date }>> {
+	const bucketPath = path.join(LOCAL_STORAGE_DIR, bucket);
+	const results: Array<{ key: string; size: number; lastModified: Date }> = [];
+	
+	async function scanDir(dir: string, baseKey: string = ''): Promise<void> {
+		try {
+			const entries = await fs.readdir(dir, { withFileTypes: true });
+			
+			for (const entry of entries) {
+				const key = baseKey ? `${baseKey}/${entry.name}` : entry.name;
+				
+				if (entry.isDirectory()) {
+					await scanDir(path.join(dir, entry.name), key);
+				} else if (!entry.name.endsWith('.meta.json')) {
+					if (!prefix || key.startsWith(prefix)) {
+						const stat = await fs.stat(path.join(dir, entry.name));
+						results.push({
+							key,
+							size: stat.size,
+							lastModified: stat.mtime
+						});
+					}
+				}
+			}
+		} catch {
+			// Directory doesn't exist
+		}
+	}
+	
+	await scanDir(bucketPath);
+	return results;
+}
+
+/**
+ * Local: Get presigned URL (returns local API URL)
+ */
+function localGetPresignedUrl(
+	key: string,
+	bucket: string = STORAGE_BUCKET,
+	_expiresIn: number = 3600
+): string {
+	return `/api/storage/${bucket}/${key}`;
+}
+
+// ===========================================
+// S3 STORAGE IMPLEMENTATION
+// ===========================================
 
 // Lazy-initialized S3 client
 let s3Client: S3Client | null = null;
@@ -82,9 +311,9 @@ export async function ensureBucket(bucket: string = STORAGE_BUCKET): Promise<voi
 }
 
 /**
- * Upload a file to storage
+ * S3: Upload a file to storage
  */
-export async function uploadFile(
+async function s3UploadFile(
 	key: string,
 	body: Buffer | Uint8Array | string,
 	contentType: string,
@@ -110,9 +339,9 @@ export async function uploadFile(
 }
 
 /**
- * Download a file from storage
+ * S3: Download a file from storage
  */
-export async function downloadFile(
+async function s3DownloadFile(
 	key: string,
 	bucket: string = STORAGE_BUCKET
 ): Promise<{ body: ReadableStream | null; contentType: string | undefined }> {
@@ -132,9 +361,9 @@ export async function downloadFile(
 }
 
 /**
- * Get file as Buffer
+ * S3: Get file as Buffer
  */
-export async function getFileAsBuffer(
+async function s3GetFileAsBuffer(
 	key: string,
 	bucket: string = STORAGE_BUCKET
 ): Promise<Buffer> {
@@ -150,9 +379,9 @@ export async function getFileAsBuffer(
 }
 
 /**
- * Delete a file from storage
+ * S3: Delete a file from storage
  */
-export async function deleteFile(
+async function s3DeleteFile(
 	key: string,
 	bucket: string = STORAGE_BUCKET
 ): Promise<void> {
@@ -165,9 +394,9 @@ export async function deleteFile(
 }
 
 /**
- * Check if a file exists
+ * S3: Check if a file exists
  */
-export async function fileExists(
+async function s3FileExists(
 	key: string,
 	bucket: string = STORAGE_BUCKET
 ): Promise<boolean> {
@@ -184,9 +413,9 @@ export async function fileExists(
 }
 
 /**
- * Get file metadata
+ * S3: Get file metadata
  */
-export async function getFileMetadata(
+async function s3GetFileMetadata(
 	key: string,
 	bucket: string = STORAGE_BUCKET
 ): Promise<{
@@ -214,9 +443,9 @@ export async function getFileMetadata(
 }
 
 /**
- * List files in a directory/prefix
+ * S3: List files in a directory/prefix
  */
-export async function listFiles(
+async function s3ListFiles(
 	prefix: string = '',
 	bucket: string = STORAGE_BUCKET,
 	maxKeys: number = 1000
@@ -241,9 +470,9 @@ export async function listFiles(
 }
 
 /**
- * Generate a presigned URL for upload (PUT)
+ * S3: Generate a presigned URL for upload (PUT)
  */
-export async function getPresignedUploadUrl(
+async function s3GetPresignedUploadUrl(
 	key: string,
 	contentType: string,
 	expiresIn: number = 3600,
@@ -261,9 +490,9 @@ export async function getPresignedUploadUrl(
 }
 
 /**
- * Generate a presigned URL for download (GET)
+ * S3: Generate a presigned URL for download (GET)
  */
-export async function getPresignedDownloadUrl(
+async function s3GetPresignedDownloadUrl(
 	key: string,
 	expiresIn: number = 3600,
 	bucket: string = STORAGE_BUCKET
@@ -276,6 +505,140 @@ export async function getPresignedDownloadUrl(
 	});
 
 	return getSignedUrl(client, command, { expiresIn });
+}
+
+// ===========================================
+// UNIFIED STORAGE API (Auto-selects backend)
+// ===========================================
+
+/**
+ * Upload a file (auto-selects S3 or local)
+ */
+export async function uploadFile(
+	key: string,
+	body: Buffer | Uint8Array | string,
+	contentType: string,
+	bucket: string = STORAGE_BUCKET,
+	metadata?: Record<string, string>
+): Promise<{ key: string; url: string }> {
+	if (getStorageMode() === 's3') {
+		return s3UploadFile(key, body, contentType, bucket, metadata);
+	}
+	return localUploadFile(key, body, contentType, bucket, metadata);
+}
+
+/**
+ * Download a file (auto-selects S3 or local)
+ */
+export async function downloadFile(
+	key: string,
+	bucket: string = STORAGE_BUCKET
+): Promise<{ body: ReadableStream | null; contentType: string | undefined }> {
+	if (getStorageMode() === 's3') {
+		return s3DownloadFile(key, bucket);
+	}
+	return localDownloadFile(key, bucket);
+}
+
+/**
+ * Get file as Buffer (auto-selects S3 or local)
+ */
+export async function getFileAsBuffer(
+	key: string,
+	bucket: string = STORAGE_BUCKET
+): Promise<Buffer> {
+	if (getStorageMode() === 's3') {
+		return s3GetFileAsBuffer(key, bucket);
+	}
+	return localGetFileAsBuffer(key, bucket);
+}
+
+/**
+ * Delete a file (auto-selects S3 or local)
+ */
+export async function deleteFile(
+	key: string,
+	bucket: string = STORAGE_BUCKET
+): Promise<void> {
+	if (getStorageMode() === 's3') {
+		return s3DeleteFile(key, bucket);
+	}
+	return localDeleteFile(key, bucket);
+}
+
+/**
+ * Check if a file exists (auto-selects S3 or local)
+ */
+export async function fileExists(
+	key: string,
+	bucket: string = STORAGE_BUCKET
+): Promise<boolean> {
+	if (getStorageMode() === 's3') {
+		return s3FileExists(key, bucket);
+	}
+	return localFileExists(key, bucket);
+}
+
+/**
+ * Get file metadata (auto-selects S3 or local)
+ */
+export async function getFileMetadata(
+	key: string,
+	bucket: string = STORAGE_BUCKET
+): Promise<{
+	contentType?: string;
+	contentLength?: number;
+	lastModified?: Date;
+	metadata?: Record<string, string>;
+} | null> {
+	if (getStorageMode() === 's3') {
+		return s3GetFileMetadata(key, bucket);
+	}
+	return localGetFileMetadata(key, bucket);
+}
+
+/**
+ * List files (auto-selects S3 or local)
+ */
+export async function listFiles(
+	prefix: string = '',
+	bucket: string = STORAGE_BUCKET,
+	maxKeys: number = 1000
+): Promise<Array<{ key: string; size?: number; lastModified?: Date }>> {
+	if (getStorageMode() === 's3') {
+		return s3ListFiles(prefix, bucket, maxKeys);
+	}
+	return localListFiles(prefix, bucket);
+}
+
+/**
+ * Get presigned upload URL (S3) or local API URL
+ */
+export async function getPresignedUploadUrl(
+	key: string,
+	contentType: string,
+	expiresIn: number = 3600,
+	bucket: string = STORAGE_BUCKET
+): Promise<string> {
+	if (getStorageMode() === 's3') {
+		return s3GetPresignedUploadUrl(key, contentType, expiresIn, bucket);
+	}
+	// For local, return the upload endpoint
+	return `/api/storage/upload/${bucket}/${key}`;
+}
+
+/**
+ * Get presigned download URL (S3) or local API URL
+ */
+export async function getPresignedDownloadUrl(
+	key: string,
+	expiresIn: number = 3600,
+	bucket: string = STORAGE_BUCKET
+): Promise<string> {
+	if (getStorageMode() === 's3') {
+		return s3GetPresignedDownloadUrl(key, expiresIn, bucket);
+	}
+	return localGetPresignedUrl(key, bucket, expiresIn);
 }
 
 /**

@@ -48,6 +48,10 @@ coverage/
 *.local
 .cache/
 
+# Local file storage (development fallback for S3/MinIO)
+data/storage/*
+!data/storage/.gitkeep
+
 # Fonts (downloaded separately, see README)
 # Uncomment if fonts should not be tracked:
 # static/fonts/*.ttf
