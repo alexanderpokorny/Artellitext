@@ -1,0 +1,53 @@
+# ===========================================
+# Artellico - Docker Compose for Coolify
+# ===========================================
+#
+# Optimiert für Coolify Deployment.
+# Coolify managed:
+#   - Ports (via Traefik/Caddy)
+#   - SSL/Let's Encrypt
+#   - Netzwerk
+#   - Umgebungsvariablen
+#
+# Database wird EXTERN von Coolify verwaltet
+# (existierende PostgreSQL Instanz nutzen)
+
+services:
+  # ===========================================
+  # Application
+  # ===========================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - BODY_SIZE_LIMIT=Infinity
+      - PUBLIC_APP_URL=${PUBLIC_APP_URL:-https://app.artellitext.com}
+      - PUBLIC_APP_NAME=${PUBLIC_APP_NAME:-Artellico}
+      # MinIO Storage
+      - STORAGE_ENDPOINT=${STORAGE_ENDPOINT}
+      - STORAGE_BUCKET=${STORAGE_BUCKET}
+      - STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY}
+      - STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY}
+      - STORAGE_REGION=${STORAGE_REGION:-eu-central-1}
+      # AI Features (optional)
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # Feature Flags
+      - PUBLIC_ENABLE_GEOLOCATION=${PUBLIC_ENABLE_GEOLOCATION:-false}
+      - PUBLIC_ENABLE_AI_FEATURES=${PUBLIC_ENABLE_AI_FEATURES:-false}
+      # Payment (optional)
+      - LEMONSQUEEZY_API_KEY=${LEMONSQUEEZY_API_KEY:-}
+      - LEMONSQUEEZY_WEBHOOK_SECRET=${LEMONSQUEEZY_WEBHOOK_SECRET:-}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    expose:
+      - "3000"
