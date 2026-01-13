@@ -103,7 +103,12 @@
 	<link rel="preload" href="/fonts/EBGaramond-Variable.ttf" as="font" type="font/ttf" crossorigin>
 	<link rel="preload" href="/fonts/SpecialElite-Regular.ttf" as="font" type="font/ttf" crossorigin>
 	
-	<!-- Favicon switcher: uses BROWSER dark/light mode, NOT app theme -->
+	<!-- Static favicon fallbacks (will be replaced by favicon-switcher.js) -->
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+	
+	<!-- Favicon switcher: dynamically switches based on BROWSER dark/light mode -->
 	<script src="/favicon-switcher.js"></script>
 	
 	<link rel="manifest" href="%sveltekit.assets%/manifest.json">
