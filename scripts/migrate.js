@@ -76,7 +76,7 @@ async function migrate() {
 		
 		await client.query(`
 			DO $$ BEGIN
-				CREATE TYPE subscription_tier AS ENUM ('free', 'pro', 'team', 'enterprise');
+				CREATE TYPE subscription_tier AS ENUM ('free', 'pro', 'team', 'enterprise', 'lifetime');
 			EXCEPTION
 				WHEN duplicate_object THEN NULL;
 			END $$;
