@@ -83,6 +83,38 @@ docker exec -it pgvector-db psql -U postgres -d Artellitext
 docker ps -a | grep pgvector
 ```
 
+### Datenbank-Sync (Entwicklung)
+
+Für die teamübergreifende Entwicklung wird die Datenbank automatisch via Git synchronisiert.
+
+**Einmalige Einrichtung:**
+```bash
+# Git Hooks installieren
+chmod +x scripts/db-sync.sh
+./scripts/db-sync.sh install-hooks
+```
+
+**Workflow:**
+1. **Bei `git push`**: Automatisches Backup wird erstellt und mitgepusht
+2. **Nach `git pull`**: Hinweis erscheint, wenn ein neues Backup vorhanden ist
+3. **Manuell wiederherstellen**: `./scripts/db-sync.sh restore`
+
+**Manuelle Befehle:**
+```bash
+# Backup erstellen
+./scripts/db-sync.sh backup
+
+# Backup wiederherstellen
+./scripts/db-sync.sh restore
+
+# Status anzeigen
+./scripts/db-sync.sh status
+```
+
+**Dateien:**
+- `data/dev-backup/dev-database.sql` – SQL Backup
+- `data/dev-backup/backup-meta.json` – Metadaten (Zeitstempel, User, Commit)
+
 ### Auf macOS
 
 ```bash

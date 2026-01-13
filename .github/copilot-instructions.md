@@ -13,6 +13,23 @@ git commit -m "Kurze Beschreibung der Änderungen"
 git push
 ```
 
+### Datenbank-Sync
+> **WICHTIG**: Die Entwicklungsdatenbank wird automatisch via Git synchronisiert.
+
+**Einmalige Einrichtung (neuer Computer):**
+```bash
+./scripts/db-sync.sh install-hooks
+```
+
+**Automatischer Ablauf:**
+- **Pre-Push Hook**: Erstellt automatisch ein DB-Backup vor jedem Push
+- **Post-Merge Hook**: Zeigt Hinweis nach Pull, wenn neues Backup vorhanden
+
+**Bei Problemen oder nach Pull mit DB-Änderungen:**
+```bash
+./scripts/db-sync.sh restore
+```
+
 ### Commit-Message-Konvention
 - **Milestone-Commits**: `v0.x.0: Feature-Beschreibung` (bei größeren Features)
 - **Minor-Commits**: `fix: ...` / `feat: ...` / `style: ...` / `docs: ...`
@@ -22,6 +39,7 @@ git push
 - Vollständige Historie aller Änderungen
 - Einfaches Rollback bei Problemen
 - Nachvollziehbarkeit für den Nutzer
+- **Datenbank-Konsistenz** zwischen Entwicklern
 
 ## 1. Grundprinzip: Keine eigenmächtigen Änderungen
 
