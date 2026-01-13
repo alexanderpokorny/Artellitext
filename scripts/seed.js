@@ -12,8 +12,10 @@
 import 'dotenv/config';
 import pg from 'pg';
 import crypto from 'crypto';
+import { promisify } from 'util';
 
 const { Pool } = pg;
+const scryptAsync = promisify(crypto.scrypt);
 
 const DATABASE_URL = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/Artellitext';
 
@@ -33,9 +35,11 @@ const pool = new Pool({
 	max: 5
 });
 
-// Simple password hash (for dev only - production should use bcrypt)
-function hashPassword(password) {
-	return crypto.createHash('sha256').update(password).digest('hex');
+// Password hash matching auth.ts format (salt:hash using scrypt)
+async function hashPassword(password) {
+	const salt = crypto.randomBytes(16).toString('hex');
+	const hash = await scryptAsync(password, salt, 64);
+	return `${salt}:${hash.toString('hex')}`;
 }
 
 async function seed() {
@@ -76,14 +80,16 @@ async function seed() {
 		];
 		
 		for (const user of users) {
+			const passwordHash = await hashPassword(user.password);
 			const result = await client.query(`
 				INSERT INTO users (email, username, password_hash, display_name, role, email_verified)
 				VALUES ($1, $2, $3, $4, $5, true)
 				ON CONFLICT (email) DO UPDATE SET
 					display_name = EXCLUDED.display_name,
-					role = EXCLUDED.role
+					role = EXCLUDED.role,
+					password_hash = EXCLUDED.password_hash
 				RETURNING id, username
-			`, [user.email, user.username, hashPassword(user.password), user.display_name, user.role]);
+			`, [user.email, user.username, passwordHash, user.display_name, user.role]);
 			
 			console.log(`  ✓ ${user.username} (${user.email})`);
 		}
