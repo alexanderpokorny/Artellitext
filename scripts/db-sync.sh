@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ===========================================
-# Artellico - Database Sync for Development
+# Artellico - Development Data Sync
 # ===========================================
 #
-# Synchronisiert die Entwicklungsdatenbank zwischen Entwicklern via Git.
+# Synchronisiert Datenbank UND lokale Dateien zwischen Entwicklern via Git.
 # 
 # Usage:
-#   ./scripts/db-sync.sh backup    - Backup erstellen (vor git push)
-#   ./scripts/db-sync.sh restore   - Backup wiederherstellen (nach git pull)
+#   ./scripts/db-sync.sh backup    - Backup erstellen (DB + Files)
+#   ./scripts/db-sync.sh restore   - Backup wiederherstellen (DB + Files)
 #   ./scripts/db-sync.sh status    - Status anzeigen
 #
 # Git Hooks:
@@ -29,6 +29,10 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 BACKUP_DIR="$PROJECT_DIR/data/dev-backup"
 BACKUP_FILE="$BACKUP_DIR/dev-database.sql"
 BACKUP_META="$BACKUP_DIR/backup-meta.json"
+
+# Lokaler File Storage
+STORAGE_DIR="$PROJECT_DIR/data/storage"
+STORAGE_BACKUP_DIR="$BACKUP_DIR/storage"
 
 # Farben
 RED='\033[0;31m'
@@ -59,6 +63,45 @@ ensure_backup_dir() {
     if [ ! -d "$BACKUP_DIR" ]; then
         mkdir -p "$BACKUP_DIR"
         log_info "Backup-Verzeichnis erstellt: $BACKUP_DIR"
+    fi
+    if [ ! -d "$STORAGE_BACKUP_DIR" ]; then
+        mkdir -p "$STORAGE_BACKUP_DIR"
+    fi
+}
+
+# ===========================================
+# File Storage Backup
+# ===========================================
+backup_files() {
+    if [ -d "$STORAGE_DIR" ] && [ "$(ls -A "$STORAGE_DIR" 2>/dev/null)" ]; then
+        log_info "Sichere lokale Dateien..."
+        
+        # Synchronisiere storage nach backup
+        rsync -av --delete --exclude='.gitkeep' "$STORAGE_DIR/" "$STORAGE_BACKUP_DIR/" > /dev/null 2>&1 || \
+            cp -r "$STORAGE_DIR"/* "$STORAGE_BACKUP_DIR/" 2>/dev/null || true
+        
+        local file_count=$(find "$STORAGE_BACKUP_DIR" -type f ! -name '.gitkeep' 2>/dev/null | wc -l | tr -d ' ')
+        log_success "  $file_count Dateien gesichert"
+    else
+        log_info "Keine lokalen Dateien zum Sichern"
+    fi
+}
+
+# ===========================================
+# File Storage Restore
+# ===========================================
+restore_files() {
+    if [ -d "$STORAGE_BACKUP_DIR" ] && [ "$(ls -A "$STORAGE_BACKUP_DIR" 2>/dev/null)" ]; then
+        log_info "Stelle lokale Dateien wieder her..."
+        
+        mkdir -p "$STORAGE_DIR"
+        rsync -av --delete "$STORAGE_BACKUP_DIR/" "$STORAGE_DIR/" > /dev/null 2>&1 || \
+            cp -r "$STORAGE_BACKUP_DIR"/* "$STORAGE_DIR/" 2>/dev/null || true
+        
+        local file_count=$(find "$STORAGE_DIR" -type f ! -name '.gitkeep' 2>/dev/null | wc -l | tr -d ' ')
+        log_success "  $file_count Dateien wiederhergestellt"
+    else
+        log_info "Keine Dateien zum Wiederherstellen"
     fi
 }
 
@@ -109,6 +152,9 @@ EOF
         log_success "Backup erstellt: $BACKUP_FILE"
         log_info "  Größe: $(numfmt --to=iec $file_size 2>/dev/null || echo "$file_size bytes")"
         log_info "  Commit: $git_commit ($git_branch)"
+        
+        # Auch Files sichern
+        backup_files
     else
         log_error "Backup fehlgeschlagen!"
         exit 1
@@ -161,6 +207,9 @@ do_restore() {
     
     if [ $? -eq 0 ]; then
         log_success "Datenbank wiederhergestellt!"
+        
+        # Auch Files wiederherstellen
+        restore_files
     else
         log_error "Wiederherstellung fehlgeschlagen!"
         exit 1
@@ -226,13 +275,13 @@ install_hooks() {
     # pre-push Hook (Backup vor Push)
     cat > "$hooks_dir/pre-push" << 'EOF'
 #!/usr/bin/env bash
-# Artellico: Automatisches DB-Backup vor Push
+# Artellico: Automatisches Backup vor Push (DB + Files)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd ../.. && pwd)"
 
 # Prüfen ob Container läuft
 if docker ps --format '{{.Names}}' | grep -q "^pgvector-db$"; then
-    echo "[DB-Sync] Erstelle Datenbank-Backup vor Push..."
+    echo "[Dev-Sync] Erstelle Backup vor Push (DB + Files)..."
     "$SCRIPT_DIR/scripts/db-sync.sh" backup
     
     # Backup zum Commit hinzufügen falls geändert
@@ -243,7 +292,7 @@ if docker ps --format '{{.Names}}' | grep -q "^pgvector-db$"; then
         git -C "$SCRIPT_DIR" commit --amend --no-edit > /dev/null 2>&1 || true
     fi
 else
-    echo "[DB-Sync] PostgreSQL Container nicht aktiv, überspringe Backup."
+    echo "[Dev-Sync] PostgreSQL Container nicht aktiv, überspringe Backup."
 fi
 
 exit 0
@@ -254,16 +303,16 @@ EOF
     # post-merge Hook (Info nach Pull)
     cat > "$hooks_dir/post-merge" << 'EOF'
 #!/usr/bin/env bash
-# Artellico: Info über DB-Backup nach Pull
+# Artellico: Info über Backup nach Pull
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd ../.. && pwd)"
-BACKUP_FILE="$SCRIPT_DIR/data/dev-backup/dev-database.sql"
 
 # Prüfen ob Backup geändert wurde
 if git diff HEAD@{1} --name-only | grep -q "data/dev-backup/"; then
     echo ""
     echo "╔══════════════════════════════════════════════════════════╗"
-    echo "║  📦 Datenbank-Backup wurde aktualisiert!                 ║"
+    echo "║  📦 Entwicklungsdaten wurden aktualisiert!               ║"
+    echo "║     (Datenbank und/oder Dateien)                         ║"
     echo "║                                                          ║"
     echo "║  Zum Wiederherstellen:                                   ║"
     echo "║    ./scripts/db-sync.sh restore                          ║"

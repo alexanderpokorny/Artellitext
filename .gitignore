@@ -52,6 +52,9 @@ coverage/
 data/storage/*
 !data/storage/.gitkeep
 
+# Dev backup storage IS tracked (for sync between developers)
+# data/dev-backup/storage/* is tracked!
+
 # Fonts (downloaded separately, see README)
 # Uncomment if fonts should not be tracked:
 # static/fonts/*.ttf
