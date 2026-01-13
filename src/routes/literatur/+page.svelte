@@ -406,14 +406,19 @@
 	}
 	
 	.doc-type {
+		display: inline-block;
 		font-family: var(--font-machine);
 		font-size: 10px;
 		font-weight: 600;
 		letter-spacing: var(--tracking-wider);
 		color: var(--color-text-muted);
-		padding: var(--space-1) var(--space-2);
+		padding: calc(var(--space-1) + 2px) var(--space-2) calc(var(--space-1) - 1px);
 		background: var(--color-bg-sunken);
 		border-radius: var(--radius-sm);
+	}
+	
+	:global(html.high-contrast) .doc-type {
+		border: 1px solid var(--color-border);
 	}
 	
 	/* Hover menu */
