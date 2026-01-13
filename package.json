@@ -9,8 +9,21 @@
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "db:start": "./scripts/docker-postgres.sh",
+    "db:stop": "docker stop pgvector-db",
     "db:migrate": "node scripts/migrate.js",
-    "db:seed": "node scripts/seed.js"
+    "db:seed": "node scripts/seed.js",
+    "db:reset": "./scripts/db.sh reset && npm run db:migrate && npm run db:seed",
+    "db:psql": "./scripts/db.sh psql",
+    "db:info": "./scripts/db.sh info",
+    "db:backup": "./scripts/db.sh backup",
+    "storage:setup": "node scripts/setup-storage.js",
+    "build:prod": "./scripts/build.sh --check",
+    "deploy:staging": "./scripts/deploy.sh staging",
+    "deploy:prod": "./scripts/deploy.sh production",
+    "docker:build": "docker build -t artellico:latest .",
+    "docker:up": "docker-compose -f docker-compose.prod.yml up -d",
+    "docker:down": "docker-compose -f docker-compose.prod.yml down"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "^5.4.0",
@@ -24,6 +37,8 @@
     "vite": "^6.0.0"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.967.0",
+    "@aws-sdk/s3-request-presigner": "^3.967.0",
     "@editorjs/code": "^2.9.0",
     "@editorjs/editorjs": "^2.30.0",
     "@editorjs/embed": "^2.7.0",
@@ -32,6 +47,7 @@
     "@editorjs/list": "^1.9.0",
     "@editorjs/paragraph": "^2.11.0",
     "@editorjs/quote": "^2.6.0",
+    "dotenv": "^17.2.3",
     "katex": "^0.16.0",
     "pg": "^8.13.0",
     "pgvector": "^0.2.0"

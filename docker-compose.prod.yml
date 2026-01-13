@@ -1,0 +1,92 @@
+# ===========================================
+# Artellico - Docker Compose for Production
+# ===========================================
+# 
+# Usage:
+#   docker-compose -f docker-compose.prod.yml up -d
+#
+# Prerequisites:
+#   - Create .env.production.local with your secrets
+#   - Build the app first: npm run build
+#
+# This setup includes:
+#   - Node.js application
+#   - PostgreSQL database with pgvector
+#   - Automatic restarts
+#   - Health checks
+
+version: '3.8'
+
+services:
+  # ===========================================
+  # Application
+  # ===========================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: artellico-app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://${DB_USER:-artellico}:${DB_PASSWORD}@db:5432/${DB_NAME:-artellico}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - PUBLIC_APP_URL=${PUBLIC_APP_URL}
+      - PUBLIC_APP_NAME=${PUBLIC_APP_NAME:-Artellico}
+      - STORAGE_ENDPOINT=${STORAGE_ENDPOINT}
+      - STORAGE_BUCKET=${STORAGE_BUCKET}
+      - STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY}
+      - STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY}
+      - STORAGE_REGION=${STORAGE_REGION:-eu-central-1}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PUBLIC_ENABLE_GEOLOCATION=${PUBLIC_ENABLE_GEOLOCATION:-false}
+      - PUBLIC_ENABLE_AI_FEATURES=${PUBLIC_ENABLE_AI_FEATURES:-false}
+      - LEMONSQUEEZY_API_KEY=${LEMONSQUEEZY_API_KEY}
+      - LEMONSQUEEZY_WEBHOOK_SECRET=${LEMONSQUEEZY_WEBHOOK_SECRET}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - artellico-network
+
+  # ===========================================
+  # Database
+  # ===========================================
+  db:
+    image: pgvector/pgvector:pg18
+    container_name: artellico-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${DB_USER:-artellico}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME:-artellico}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-artellico}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - artellico-network
+
+# ===========================================
+# Volumes & Networks
+# ===========================================
+volumes:
+  postgres-data:
+    driver: local
+
+networks:
+  artellico-network:
+    driver: bridge

@@ -13,12 +13,12 @@
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	
 	const i18n = createI18n();
-	const themeStore = createTheme();
+	const { theme, setTheme } = createTheme();
 	
 	// Form state
 	let displayName = $state(data.user?.displayName || '');
 	let language = $state<SupportedLanguage>(i18n.language);
-	let theme = $state<Theme>(themeStore.theme);
+	let selectedTheme = $state<Theme>($theme);
 	let cacheLimit = $state(100);
 	let enableGeolocation = $state(false);
 	let citationFormat = $state<CitationFormat>('apa');
@@ -167,8 +167,8 @@
 									type="radio"
 									name="theme"
 									value="light"
-									checked={theme === 'light'}
-									onchange={() => { theme = 'light'; themeStore.setTheme('light'); }}
+									checked={$theme === 'light'}
+									onchange={() => { selectedTheme = 'light'; setTheme('light'); }}
 								/>
 								<span class="theme-preview theme-light">
 									<span class="preview-icon">☀️</span>
@@ -181,8 +181,8 @@
 									type="radio"
 									name="theme"
 									value="dark"
-									checked={theme === 'dark'}
-									onchange={() => { theme = 'dark'; themeStore.setTheme('dark'); }}
+									checked={$theme === 'dark'}
+									onchange={() => { selectedTheme = 'dark'; setTheme('dark'); }}
 								/>
 								<span class="theme-preview theme-dark">
 									<span class="preview-icon">🌙</span>
@@ -195,8 +195,8 @@
 									type="radio"
 									name="theme"
 									value="auto"
-									checked={theme === 'auto'}
-									onchange={() => { theme = 'auto'; themeStore.setTheme('auto'); }}
+									checked={$theme === 'auto'}
+									onchange={() => { selectedTheme = 'auto'; setTheme('auto'); }}
 								/>
 								<span class="theme-preview theme-auto">
 									<span class="preview-icon">💻</span>
