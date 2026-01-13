@@ -1271,6 +1271,42 @@ html.dark .auth-logo {
 	color: var(--color-success);
 }
 
+/* ===========================================
+   FONT BASELINE ADJUSTMENTS
+   Special Elite font sits slightly high, 
+   needs 2px downward shift for visual alignment
+   =========================================== */
+
+.sidebar-title,
+.section-title,
+.stat-value,
+.stat-label,
+.action-label,
+.note-time,
+.nav-label,
+.sidebar-copyright,
+.status-indicator,
+.doc-count,
+.doc-author,
+.doc-type,
+.sort-select,
+.btn,
+[class*="font-machine"] {
+	position: relative;
+	top: 2px;
+}
+
+/* ===========================================
+   HIGH CONTRAST MODE - Additional Styles
+   =========================================== */
+
+html.high-contrast .doc-type,
+html.high-contrast .badge,
+html.high-contrast .chip,
+html.high-contrast .tag {
+	border: 1px solid var(--color-border);
+}
+
 /* Responsive */
 @media (max-width: 900px) {
 	.auth-page-split {
