@@ -10,18 +10,22 @@ import { validateSession, refreshSession, SESSION_COOKIE_NAME } from '$lib/serve
 import { initializeDatabase } from '$lib/server/db';
 
 // Initialize database on server startup (runs once)
-let dbInitialized = false;
+// Use a Promise to prevent race conditions with parallel requests
+let dbInitPromise: Promise<void> | null = null;
+
 async function ensureDbInitialized() {
-	if (!dbInitialized) {
-		try {
-			await initializeDatabase();
-			dbInitialized = true;
-		} catch (error) {
-			console.error('[Server] Database initialization failed:', error);
-			// Continue anyway - tables might already exist
-			dbInitialized = true;
-		}
+	// If already initialized or initializing, return existing promise
+	if (dbInitPromise) {
+		return dbInitPromise;
 	}
+	
+	// Create initialization promise (only once)
+	dbInitPromise = initializeDatabase().catch((error) => {
+		console.error('[Server] Database initialization failed:', error);
+		// Don't retry - tables might already exist
+	});
+	
+	return dbInitPromise;
 }
 
 /**

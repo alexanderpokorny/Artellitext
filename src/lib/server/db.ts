@@ -251,17 +251,33 @@ export async function initializeDatabase(): Promise<void> {
 			$$ language 'plpgsql';
 		`);
 		
-		// Apply trigger to tables
-		const tables = ['users', 'notes', 'documents'];
-		for (const table of tables) {
-			await query(`
-				DROP TRIGGER IF EXISTS update_${table}_updated_at ON ${table};
-				CREATE TRIGGER update_${table}_updated_at
-					BEFORE UPDATE ON ${table}
+		// Apply triggers to tables - use DO block to avoid deadlocks with parallel requests
+		await query(`
+			DO $$
+			BEGIN
+				-- Users trigger
+				DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+				CREATE TRIGGER update_users_updated_at
+					BEFORE UPDATE ON users
 					FOR EACH ROW
 					EXECUTE FUNCTION update_updated_at_column();
-			`);
-		}
+				
+				-- Notes trigger
+				DROP TRIGGER IF EXISTS update_notes_updated_at ON notes;
+				CREATE TRIGGER update_notes_updated_at
+					BEFORE UPDATE ON notes
+					FOR EACH ROW
+					EXECUTE FUNCTION update_updated_at_column();
+				
+				-- Documents trigger
+				DROP TRIGGER IF EXISTS update_documents_updated_at ON documents;
+				CREATE TRIGGER update_documents_updated_at
+					BEFORE UPDATE ON documents
+					FOR EACH ROW
+					EXECUTE FUNCTION update_updated_at_column();
+			END;
+			$$;
+		`);
 		
 		console.log('[DB] Database initialized successfully');
 	} catch (error) {
