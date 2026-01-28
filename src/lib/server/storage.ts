@@ -612,6 +612,21 @@ export async function listFiles(
 }
 
 /**
+ * Get total storage usage for a user (in bytes)
+ */
+export async function getStorageUsage(
+	userId: string,
+	bucket: string = STORAGE_BUCKET
+): Promise<number> {
+	try {
+		const files = await listFiles(`users/${userId}/`, bucket);
+		return files.reduce((total, file) => total + (file.size || 0), 0);
+	} catch {
+		return 0;
+	}
+}
+
+/**
  * Get presigned upload URL (S3) or local API URL
  */
 export async function getPresignedUploadUrl(

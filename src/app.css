@@ -382,14 +382,28 @@ html.dark .logo-dark {
 .main-footer {
 	grid-area: main-footer;
 	display: flex;
-	align-items: flex-start;
-	justify-content: flex-end;
+	align-items: center;
+	justify-content: space-between;
 	padding: var(--space-2) var(--space-6) var(--space-3);
 	background: var(--color-bg-sidebar);  /* Same as sidebar, not elevated */
 	border-top: 1px solid var(--color-border);
 	font-family: var(--font-machine);
 	font-size: var(--font-size-xs);
 	color: var(--color-text-muted);
+}
+
+.footer-stats {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+.footer-stat {
+	letter-spacing: var(--tracking-wide);
+}
+
+.footer-divider {
+	color: var(--color-border-strong);
 }
 
 /* ===========================================

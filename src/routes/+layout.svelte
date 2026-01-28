@@ -111,6 +111,20 @@
 		syncStatus === 'syncing' ? i18n.t('status.syncing') :
 		i18n.t('status.synced')
 	);
+	
+	// Stats from layout data
+	const stats = $derived(data.stats);
+	
+	// Format storage size (MB or GB)
+	const formattedStorage = $derived(() => {
+		const bytes = stats?.storageBytes ?? 0;
+		if (bytes === 0) return '0 MB';
+		const mb = bytes / (1024 * 1024);
+		if (mb >= 1024) {
+			return `${(mb / 1024).toFixed(1)} GB`;
+		}
+		return `${Math.round(mb)} MB`;
+	});
 </script>
 
 <svelte:head>
@@ -280,6 +294,15 @@
 		<span class="status-indicator" class:offline={syncStatus === 'offline'}>
 			{statusText}
 		</span>
+		{#if stats}
+			<span class="footer-stats">
+				<span class="footer-stat">{stats.notes} {i18n.t('dashboard.stats.notes')}</span>
+				<span class="footer-divider">·</span>
+				<span class="footer-stat">{stats.documents} {i18n.t('dashboard.stats.documents')}</span>
+				<span class="footer-divider">·</span>
+				<span class="footer-stat">{formattedStorage()}</span>
+			</span>
+		{/if}
 	</footer>
 </div>
 

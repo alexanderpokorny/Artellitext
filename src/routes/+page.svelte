@@ -15,7 +15,6 @@
 	import type { MarginaliaNote } from '$lib/types';
 	
 	let { data }: { data: PageData } = $props();
-	const userData = $derived(data.user);
 	
 	const i18n = createI18n();
 	
@@ -63,19 +62,6 @@
 	let currentPage = $state(1);
 	let expandedNoteId = $state<string | null>(null);
 	let loadMoreTrigger = $state<HTMLElement | null>(null);
-	
-	// Stats from server
-	const stats = $derived({
-		notes: data.stats?.notes ?? 0,
-		documents: data.stats?.documents ?? 0,
-		storage: '—',
-	});
-	
-	const welcomeMessage = $derived(
-		userData?.displayName 
-			? i18n.t('dashboard.welcome', { name: userData.displayName })
-			: i18n.t('dashboard.welcome', { name: userData?.username || 'User' })
-	);
 	
 	// Sorted notes
 	const sortedNotes = $derived(() => {
@@ -368,18 +354,6 @@
 />
 
 <div class="dashboard">
-	<!-- Header with Welcome + Stats -->
-	<header class="dashboard-header">
-		{#if userData}
-			<h1 class="welcome-heading">{welcomeMessage}</h1>
-		{/if}
-		<div class="header-stats">
-			<span class="header-stat">{stats.notes} {i18n.t('dashboard.stats.notes')}</span>
-			<span class="header-stat-divider">·</span>
-			<span class="header-stat">{stats.documents} {i18n.t('dashboard.stats.documents')}</span>
-		</div>
-	</header>
-	
 	<!-- Notes List with View Options -->
 	<section class="notes-section" onblur={handleEditorBlur}>
 		<div class="notes-header">
@@ -594,15 +568,6 @@
 </div>
 
 <style>
-	/* Welcome heading */
-	.welcome-heading {
-		font-family: var(--font-human);
-		font-size: var(--font-size-2xl);
-		font-weight: 500;
-		color: var(--color-text);
-		margin-bottom: var(--space-6);
-	}
-	
 	/* QuickEdit Editor inside new note card */
 	.quick-edit-editor {
 		flex: 1;

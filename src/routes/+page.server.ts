@@ -27,29 +27,17 @@ export const load: PageServerLoad = async ({ parent }) => {
 			[user.id]
 		);
 		
-		const statsResult = await query(
-			`SELECT 
-				(SELECT COUNT(*) FROM notes WHERE user_id = $1) as note_count,
-				(SELECT COUNT(*) FROM documents WHERE user_id = $1) as doc_count`,
-			[user.id]
-		);
-		
 		return {
 			recentNotes: notesResult.rows.map(row => ({
 				...row,
 				excerpt: null, // Will be computed client-side from content
 			})),
-			stats: {
-				notes: parseInt(statsResult.rows[0]?.note_count || '0'),
-				documents: parseInt(statsResult.rows[0]?.doc_count || '0'),
-			},
 		};
 	} catch (err) {
 		// Database might not be initialized yet
 		console.error('Dashboard load error:', err);
 		return {
 			recentNotes: [],
-			stats: { notes: 0, documents: 0 },
 		};
 	}
 };
