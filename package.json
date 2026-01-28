@@ -47,8 +47,11 @@
     "@editorjs/list": "^1.9.0",
     "@editorjs/paragraph": "^2.11.0",
     "@editorjs/quote": "^2.6.0",
+    "@types/katex": "^0.16.8",
+    "citation-js": "^0.7.22",
     "dotenv": "^17.2.3",
-    "katex": "^0.16.0",
+    "katex": "^0.16.28",
+    "mermaid": "^11.12.2",
     "pg": "^8.13.0",
     "pgvector": "^0.2.0"
   },

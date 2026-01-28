@@ -37,6 +37,12 @@
 			const Quote = (await import('@editorjs/quote')).default;
 			const Code = (await import('@editorjs/code')).default;
 			
+			// Import custom tools
+			const { MathTool, MermaidTool, CitationTool } = await import('$lib/editor/tools');
+			
+			// Import KaTeX CSS
+			await import('katex/dist/katex.min.css');
+			
 			editor = new EditorJS({
 				holder: editorContainer,
 				placeholder: i18n.t('editor.placeholder'),
@@ -61,8 +67,31 @@
 						inlineToolbar: true,
 					},
 					code: Code,
-					// LaTeX block would be implemented as a custom tool
-					// math: MathTool,
+					// LaTeX / Math formulas
+					math: {
+						// @ts-expect-error Custom tool
+						class: MathTool,
+						config: {
+							placeholder: 'Enter LaTeX formula (e.g., E = mc^2)',
+						},
+					},
+					// Mermaid diagrams
+					mermaid: {
+						// @ts-expect-error Custom tool
+						class: MermaidTool,
+						config: {
+							placeholder: 'Enter Mermaid diagram code',
+						},
+					},
+					// Citations
+					citation: {
+						// @ts-expect-error Custom tool
+						class: CitationTool,
+						config: {
+							defaultStyle: 'apa',
+							availableStyles: ['apa', 'ieee', 'chicago-author-date', 'harvard1', 'vancouver'],
+						},
+					},
 				},
 				onChange: async () => {
 					saveStatus = 'unsaved';

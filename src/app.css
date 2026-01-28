@@ -1327,3 +1327,359 @@ html.high-contrast .tag {
 		right: var(--space-3);
 	}
 }
+
+/* ===========================================
+   EDITOR TOOLS - LaTeX / Math Block
+   =========================================== */
+
+.math-block {
+	margin: var(--space-4) 0;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-bg-elevated);
+	overflow: hidden;
+}
+
+.math-block[data-display-mode="true"] {
+	padding: var(--space-4);
+}
+
+.math-block[data-display-mode="false"] {
+	display: inline-block;
+	padding: var(--space-2);
+	margin: 0 var(--space-1);
+	vertical-align: middle;
+}
+
+.math-input-container {
+	padding: var(--space-3);
+	background: var(--color-bg-sunken);
+	border-bottom: 1px solid var(--color-border);
+}
+
+.math-input {
+	width: 100%;
+	min-height: 60px;
+	padding: var(--space-2);
+	font-family: var(--font-mono);
+	font-size: var(--font-size-sm);
+	color: var(--color-text);
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	resize: vertical;
+}
+
+.math-input:focus {
+	outline: none;
+	border-color: var(--color-link);
+}
+
+.math-preview {
+	padding: var(--space-4);
+	text-align: center;
+	min-height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.math-placeholder {
+	color: var(--color-text-muted);
+	font-style: italic;
+}
+
+.math-error {
+	color: var(--color-error);
+	font-size: var(--font-size-sm);
+}
+
+.math-controls {
+	display: flex;
+	gap: var(--space-2);
+	padding: var(--space-2) var(--space-3);
+	background: var(--color-bg-sunken);
+	border-top: 1px solid var(--color-border);
+}
+
+.math-toggle {
+	font-size: var(--font-size-xs);
+	padding: var(--space-1) var(--space-2);
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+	color: var(--color-text);
+}
+
+.math-toggle:hover {
+	background: var(--color-bg-hover);
+}
+
+.equation-wrapper {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-4);
+}
+
+.equation-number {
+	color: var(--color-text-muted);
+	font-size: var(--font-size-sm);
+}
+
+/* KaTeX overrides */
+.katex {
+	font-size: 1.1em;
+}
+
+.katex-display {
+	margin: 0;
+	overflow-x: auto;
+	overflow-y: hidden;
+}
+
+/* ===========================================
+   EDITOR TOOLS - Mermaid Diagram Block
+   =========================================== */
+
+.mermaid-block {
+	margin: var(--space-4) 0;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-bg-elevated);
+	overflow: hidden;
+}
+
+.mermaid-split {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1px;
+	background: var(--color-border);
+}
+
+.mermaid-input-container,
+.mermaid-preview-container {
+	background: var(--color-bg);
+	padding: var(--space-3);
+}
+
+.mermaid-label {
+	display: block;
+	font-size: var(--font-size-xs);
+	color: var(--color-text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	margin-bottom: var(--space-2);
+}
+
+.mermaid-input {
+	width: 100%;
+	min-height: 150px;
+	padding: var(--space-2);
+	font-family: var(--font-mono);
+	font-size: var(--font-size-sm);
+	color: var(--color-text);
+	background: var(--color-bg-sunken);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	resize: vertical;
+}
+
+.mermaid-input:focus {
+	outline: none;
+	border-color: var(--color-link);
+}
+
+.mermaid-preview {
+	min-height: 150px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--color-bg);
+	border-radius: var(--radius-sm);
+	overflow: auto;
+}
+
+.mermaid-preview svg {
+	max-width: 100%;
+	height: auto;
+}
+
+.mermaid-placeholder {
+	color: var(--color-text-muted);
+	font-style: italic;
+}
+
+.mermaid-error {
+	color: var(--color-error);
+	font-size: var(--font-size-sm);
+	padding: var(--space-2);
+}
+
+.mermaid-controls {
+	display: flex;
+	gap: var(--space-2);
+	padding: var(--space-2) var(--space-3);
+	background: var(--color-bg-sunken);
+	border-top: 1px solid var(--color-border);
+}
+
+.mermaid-export-btn,
+.mermaid-template {
+	font-size: var(--font-size-xs);
+	padding: var(--space-1) var(--space-2);
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+	color: var(--color-text);
+}
+
+.mermaid-export-btn:hover,
+.mermaid-template:hover {
+	background: var(--color-bg-hover);
+}
+
+/* Responsive Mermaid */
+@media (max-width: 768px) {
+	.mermaid-split {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* ===========================================
+   EDITOR TOOLS - Citation Block
+   =========================================== */
+
+.citation-block {
+	display: inline;
+}
+
+.citation-display {
+	display: inline;
+	cursor: pointer;
+}
+
+.citation-key {
+	color: var(--color-link);
+	font-weight: 500;
+}
+
+.citation-preview {
+	display: block;
+	font-size: var(--font-size-sm);
+	color: var(--color-text-muted);
+	margin-top: var(--space-1);
+}
+
+.citation-placeholder {
+	color: var(--color-text-muted);
+	font-style: italic;
+}
+
+.citation-input-area {
+	margin-top: var(--space-2);
+	padding: var(--space-3);
+	background: var(--color-bg-elevated);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+}
+
+.citation-input-area label {
+	display: block;
+	font-size: var(--font-size-sm);
+	color: var(--color-text-muted);
+	margin-bottom: var(--space-1);
+}
+
+.citation-bibtex-input {
+	width: 100%;
+	min-height: 120px;
+	padding: var(--space-2);
+	font-family: var(--font-mono);
+	font-size: var(--font-size-sm);
+	color: var(--color-text);
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	resize: vertical;
+	margin-bottom: var(--space-2);
+}
+
+.citation-bibtex-input:focus {
+	outline: none;
+	border-color: var(--color-link);
+}
+
+.citation-style-container {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	margin-bottom: var(--space-2);
+}
+
+.citation-style-container label {
+	margin-bottom: 0;
+}
+
+.citation-style-select {
+	flex: 1;
+	padding: var(--space-1) var(--space-2);
+	font-size: var(--font-size-sm);
+	color: var(--color-text);
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+}
+
+.citation-parse-btn {
+	width: 100%;
+	padding: var(--space-2);
+	font-size: var(--font-size-sm);
+	font-weight: 500;
+	color: var(--color-text-inverse);
+	background: var(--color-accent);
+	border: none;
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+}
+
+.citation-parse-btn:hover {
+	background: var(--color-accent-hover);
+}
+
+/* Inline citation in text */
+.citation-inline {
+	color: var(--color-link);
+	cursor: pointer;
+}
+
+.citation-inline:hover {
+	text-decoration: underline;
+}
+
+/* Bibliography styles */
+.bibliography {
+	margin-top: var(--space-8);
+	padding-top: var(--space-4);
+	border-top: 2px solid var(--color-border);
+}
+
+.bibliography-title {
+	font-size: var(--font-size-xl);
+	font-weight: 600;
+	margin-bottom: var(--space-4);
+}
+
+.bibliography-entry {
+	padding: var(--space-2) 0;
+	padding-left: var(--space-6);
+	text-indent: calc(-1 * var(--space-6));
+	font-size: var(--font-size-sm);
+	line-height: 1.6;
+}
+
+.bibliography-entry + .bibliography-entry {
+	border-top: 1px solid var(--color-border-subtle);
+}
