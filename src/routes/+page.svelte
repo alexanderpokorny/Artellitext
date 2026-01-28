@@ -2,38 +2,50 @@
   Artellico - Dashboard (Home Page)
   
   Landing page showing recent notes, quick actions, and statistics.
-  Includes inline editor that activates on focus.
+  Features: Embedded QuickEdit editor with marginalia, tags, and autosave on blur.
 -->
 
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 	import { createI18n } from '$stores/i18n.svelte';
+	import type { MarginaliaNote } from '$lib/types';
 	
 	let { data }: { data: PageData } = $props();
-	// Derived user data for future personalization
 	const userData = $derived(data.user);
 	
 	const i18n = createI18n();
 	
-	// Inline editor state
-	let quickNoteContainer: HTMLElement;
+	// QuickEdit editor state
+	let editorContainer: HTMLElement;
+	let marginaliaColumn: HTMLElement;
 	let quickEditor: any = $state(null);
 	let isEditorActive = $state(false);
 	let isEditorLoading = $state(false);
 	let quickNoteTitle = $state('');
-	let isFullscreen = $state(false);
+	let saveStatus = $state<'saved' | 'saving' | 'unsaved' | 'idle'>('idle');
 	
-	// Demo data for initial display (will be replaced with real data from server)
+	// Marginalia state
+	let marginalia = $state<MarginaliaNote[]>([]);
+	let editingMarginaliaId = $state<string | null>(null);
+	let draggingMarginaliaId = $state<string | null>(null);
+	let showContextMenu = $state(false);
+	let contextMenuPosition = $state({ x: 0, y: 0 });
+	let contextMenuTargetId = $state<string | null>(null);
+	
+	// Tags state
+	let tags = $state<string[]>([]);
+	let newTag = $state('');
+	
+	// Demo stats (will be replaced with real data)
 	const stats = $derived({
 		notes: 42,
 		documents: 18,
 		storage: '2.4 GB',
 	});
 	
-	// Welcome message based on user
 	const welcomeMessage = $derived(
 		userData?.displayName 
 			? i18n.t('dashboard.welcome', { name: userData.displayName })
@@ -57,7 +69,7 @@
 		return i18n.t('time.daysAgo', { days });
 	}
 	
-	// Initialize Editor.js on focus
+	// Initialize QuickEdit editor on focus
 	async function activateEditor() {
 		if (quickEditor || isEditorLoading || !browser) return;
 		
@@ -68,9 +80,11 @@
 			const Header = (await import('@editorjs/header')).default;
 			const List = (await import('@editorjs/list')).default;
 			const Quote = (await import('@editorjs/quote')).default;
+			// @ts-expect-error No type declarations available
+			const DragDrop = (await import('editorjs-drag-drop')).default;
 			
 			quickEditor = new EditorJS({
-				holder: quickNoteContainer,
+				holder: editorContainer,
 				placeholder: i18n.t('editor.placeholder'),
 				autofocus: true,
 				minHeight: 100,
@@ -78,20 +92,21 @@
 					header: {
 						// @ts-expect-error Editor.js types
 						class: Header,
-						config: {
-							levels: [2, 3, 4],
-							defaultLevel: 2,
-						},
+						config: { levels: [2, 3, 4], defaultLevel: 2 },
 					},
 					list: {
 						// @ts-expect-error Editor.js types
 						class: List,
 						inlineToolbar: true,
 					},
-					quote: {
-						class: Quote,
-						inlineToolbar: true,
-					},
+					quote: { class: Quote, inlineToolbar: true },
+				},
+				onChange: () => {
+					saveStatus = 'unsaved';
+					syncMarginaliaPositions();
+				},
+				onReady: () => {
+					new DragDrop(quickEditor);
 				},
 			});
 			
@@ -103,189 +118,380 @@
 		}
 	}
 	
-	// Save quick note and navigate to full editor
-	async function saveAndExpand() {
+	// Marginalia handlers
+	function handleMarginaliaColumnClick(e: MouseEvent) {
+		if (!isEditorActive || editingMarginaliaId) return;
+		if ((e.target as HTMLElement).closest('.marginalia-note')) return;
+		
+		const rect = marginaliaColumn.getBoundingClientRect();
+		const clickY = e.clientY - rect.top + marginaliaColumn.scrollTop;
+		
+		const newNote: MarginaliaNote = {
+			id: crypto.randomUUID(),
+			blockId: 'block-0',
+			content: '',
+			top: clickY,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		};
+		
+		marginalia = [...marginalia, newNote];
+		editingMarginaliaId = newNote.id;
+		saveStatus = 'unsaved';
+	}
+	
+	function updateMarginaliaContent(id: string, content: string) {
+		marginalia = marginalia.map(m =>
+			m.id === id ? { ...m, content, updatedAt: new Date() } : m
+		);
+		saveStatus = 'unsaved';
+	}
+	
+	function deleteMarginalia(id: string) {
+		marginalia = marginalia.filter(m => m.id !== id);
+		closeContextMenu();
+		saveStatus = 'unsaved';
+	}
+	
+	function handleMarginaliaContextMenu(e: MouseEvent, id: string) {
+		e.preventDefault();
+		e.stopPropagation();
+		contextMenuPosition = { x: e.clientX, y: e.clientY };
+		contextMenuTargetId = id;
+		showContextMenu = true;
+	}
+	
+	function closeContextMenu() {
+		showContextMenu = false;
+		contextMenuTargetId = null;
+	}
+	
+	function handleMarginaliaDragStart(e: MouseEvent, id: string) {
+		draggingMarginaliaId = id;
+		e.preventDefault();
+	}
+	
+	function handleMarginaliaDrag(e: MouseEvent) {
+		if (!draggingMarginaliaId || !marginaliaColumn) return;
+		
+		const rect = marginaliaColumn.getBoundingClientRect();
+		const newTop = Math.max(0, e.clientY - rect.top + marginaliaColumn.scrollTop);
+		
+		marginalia = marginalia.map(m =>
+			m.id === draggingMarginaliaId ? { ...m, top: newTop } : m
+		);
+	}
+	
+	function handleMarginaliaDragEnd() {
+		if (draggingMarginaliaId) {
+			draggingMarginaliaId = null;
+			saveStatus = 'unsaved';
+		}
+	}
+	
+	async function syncMarginaliaPositions() {
+		if (!quickEditor || !editorContainer) return;
+		await tick();
+		// Basic position sync - would be enhanced with block IDs
+	}
+	
+	// Tag management
+	function addTag() {
+		if (newTag.trim() && !tags.includes(newTag.trim())) {
+			tags = [...tags, newTag.trim()];
+			newTag = '';
+			saveStatus = 'unsaved';
+		}
+	}
+	
+	function removeTag(tag: string) {
+		tags = tags.filter(t => t !== tag);
+		saveStatus = 'unsaved';
+	}
+	
+	// Autosave on blur (offline-first)
+	async function handleEditorBlur(e: FocusEvent) {
+		// Check if focus moved outside the quickedit section
+		const relatedTarget = e.relatedTarget as HTMLElement | null;
+		const quickEditSection = (e.currentTarget as HTMLElement).closest('.quick-edit-section');
+		
+		if (relatedTarget && quickEditSection?.contains(relatedTarget)) {
+			return; // Focus still within quickedit
+		}
+		
+		if (saveStatus === 'unsaved' && quickEditor) {
+			await saveToCache();
+		}
+	}
+	
+	// Save to local cache (offline-first)
+	async function saveToCache() {
 		if (!quickEditor) return;
+		
+		saveStatus = 'saving';
 		
 		try {
 			const content = await quickEditor.save();
+			const noteData = {
+				title: quickNoteTitle || i18n.t('editor.untitled'),
+				content,
+				tags,
+				marginalia,
+				noteId: null,
+			};
 			
-			// Save to server
-			const response = await fetch('/api/notes', {
+			// Save to IndexedDB first
+			if (browser) {
+				const { saveNoteToCache } = await import('$stores/offline');
+				await saveNoteToCache(noteData);
+			}
+			
+			// Sync to server (non-blocking)
+			fetch('/api/notes', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					title: quickNoteTitle || i18n.t('editor.untitled'),
-					content,
-					tags: [],
-				}),
-			});
+				body: JSON.stringify(noteData),
+			}).catch(err => console.warn('Server sync pending:', err));
 			
-			if (response.ok) {
-				const { id } = await response.json();
-				goto(`/editor/${id}`);
-			} else {
-				// Fallback: navigate to new editor with content in memory
-				goto('/editor');
-			}
-		} catch (err) {
-			console.error('Failed to save quick note:', err);
-			goto('/editor');
+			saveStatus = 'saved';
+		} catch {
+			saveStatus = 'unsaved';
 		}
 	}
 	
-	// Toggle fullscreen mode
-	function toggleFullscreen() {
-		isFullscreen = !isFullscreen;
+	// Expand to full editor
+	async function expandToFullEditor() {
+		if (saveStatus === 'unsaved' && quickEditor) {
+			await saveToCache();
+		}
+		goto('/editor');
 	}
 	
-	// Handle keyboard shortcuts
+	// Keyboard shortcuts
 	function handleKeydown(event: KeyboardEvent) {
-		if (isFullscreen && event.key === 'Escape') {
-			isFullscreen = false;
+		if (event.key === 'Escape' && showContextMenu) {
+			closeContextMenu();
 		}
 	}
+	
+	const sortedMarginalia = $derived([...marginalia].sort((a, b) => a.top - b.top));
 	
 	// Cleanup on unmount
 	onMount(() => {
+		const handleClickOutside = (e: MouseEvent) => {
+			if (showContextMenu && !(e.target as HTMLElement).closest('.context-menu')) {
+				closeContextMenu();
+			}
+		};
+		document.addEventListener('click', handleClickOutside);
+		
 		return () => {
 			quickEditor?.destroy();
+			document.removeEventListener('click', handleClickOutside);
 		};
 	});
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window 
+	onkeydown={handleKeydown}
+	onmousemove={handleMarginaliaDrag}
+	onmouseup={handleMarginaliaDragEnd}
+/>
 
-<div class="dashboard" class:has-fullscreen-editor={isFullscreen}>
+<div class="dashboard">
 	<!-- Welcome Message -->
-	{#if userData && !isFullscreen}
+	{#if userData}
 		<h1 class="welcome-heading">{welcomeMessage}</h1>
 	{/if}
 	
-	<!-- Quick Note Editor -->
-	<section class="quick-note-section" class:active={isEditorActive} class:fullscreen={isFullscreen}>
-		<div class="quick-note-header">
-			<input
-				type="text"
-				class="quick-note-title"
-				bind:value={quickNoteTitle}
-				placeholder={i18n.t('editor.untitled')}
-				onfocus={activateEditor}
-			/>
+	<!-- QuickEdit Section (embedded editor with marginalia + tags) -->
+	<section 
+		class="quick-edit-section" 
+		class:active={isEditorActive}
+		onblur={handleEditorBlur}
+	>
+		<div class="quick-edit-layout">
+			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+			<!-- Marginalia column (left) -->
+			<div 
+				class="marginalia-column"
+				bind:this={marginaliaColumn}
+				onclick={handleMarginaliaColumnClick}
+				onkeydown={(e) => e.key === 'Enter' && handleMarginaliaColumnClick(e as unknown as MouseEvent)}
+				role="region"
+				aria-label="Marginalia"
+				tabindex="-1"
+				title={i18n.t('editor.newMarginalia')}
+			>
+				{#each sortedMarginalia as note (note.id)}
+					<div
+						class="marginalia-note"
+						class:editing={editingMarginaliaId === note.id}
+						class:dragging={draggingMarginaliaId === note.id}
+						style="top: {note.top}px"
+						oncontextmenu={(e) => handleMarginaliaContextMenu(e, note.id)}
+						role="group"
+						aria-label="Marginal note"
+					>
+						<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+						<div 
+							class="marginalia-drag-handle"
+							onmousedown={(e) => handleMarginaliaDragStart(e, note.id)}
+							role="separator"
+							aria-orientation="vertical"
+							tabindex="-1"
+						></div>
+						<textarea
+							class="marginalia-textarea"
+							value={note.content}
+							placeholder={i18n.t('editor.marginalia') + '...'}
+							oninput={(e) => updateMarginaliaContent(note.id, e.currentTarget.value)}
+							onfocus={() => editingMarginaliaId = note.id}
+							onblur={() => setTimeout(() => editingMarginaliaId = null, 100)}
+							onclick={(e) => e.stopPropagation()}
+						></textarea>
+					</div>
+				{/each}
+			</div>
 			
-			{#if isEditorActive}
-				<div class="quick-note-actions">
-					<button 
-						type="button"
-						class="btn btn-icon"
-						onclick={toggleFullscreen}
-						title={isFullscreen ? i18n.t('editor.exitFullscreen') : i18n.t('editor.fullscreen')}
-					>
-						{#if isFullscreen}
-							<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M8 3v3a2 2 0 0 1-2 2H3" />
-								<path d="M21 8h-3a2 2 0 0 1-2-2V3" />
-								<path d="M3 16h3a2 2 0 0 1 2 2v3" />
-								<path d="M16 21v-3a2 2 0 0 1 2-2h3" />
-							</svg>
-						{:else}
-							<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M8 3H5a2 2 0 0 0-2 2v3" />
-								<path d="M21 8V5a2 2 0 0 0-2-2h-3" />
-								<path d="M3 16v3a2 2 0 0 0 2 2h3" />
-								<path d="M16 21h3a2 2 0 0 0 2-2v-3" />
-							</svg>
-						{/if}
-					</button>
-					
-					<button 
-						type="button"
-						class="btn btn-primary btn-sm"
-						onclick={saveAndExpand}
-					>
-						{i18n.t('action.save')}
-					</button>
+			<!-- Main editor area -->
+			<main class="quick-edit-main">
+				<div 
+					class="quick-edit-editor"
+					bind:this={editorContainer}
+					onfocus={activateEditor}
+					onclick={activateEditor}
+					onkeydown={(e) => e.key === 'Enter' && !isEditorActive && activateEditor()}
+					role="textbox"
+					tabindex="0"
+				>
+					{#if !isEditorActive && !isEditorLoading}
+						<span class="quick-edit-placeholder">{i18n.t('editor.placeholder')}</span>
+					{/if}
+					{#if isEditorLoading}
+						<span class="quick-edit-loading">...</span>
+					{/if}
 				</div>
-			{/if}
-		</div>
-		
-		<div 
-			class="quick-note-editor"
-			bind:this={quickNoteContainer}
-			onfocus={activateEditor}
-			onclick={activateEditor}
-			onkeydown={(e) => e.key === 'Enter' && activateEditor()}
-			role="textbox"
-			tabindex="0"
-		>
-			{#if !isEditorActive && !isEditorLoading}
-				<span class="quick-note-placeholder">{i18n.t('editor.placeholder')}</span>
-			{/if}
-			{#if isEditorLoading}
-				<span class="quick-note-loading">...</span>
-			{/if}
+				
+				{#if isEditorActive}
+					<div class="quick-edit-footer">
+						<span class="save-indicator" class:saved={saveStatus === 'saved'} class:saving={saveStatus === 'saving'}>
+							{#if saveStatus === 'saved'}
+								{i18n.t('editor.saved')}
+							{:else if saveStatus === 'saving'}
+								{i18n.t('editor.saving')}
+							{:else if saveStatus === 'unsaved'}
+								●
+							{/if}
+						</span>
+						<button 
+							type="button"
+							class="btn btn-ghost btn-sm"
+							onclick={expandToFullEditor}
+						>
+							{i18n.t('editor.fullscreen')}
+						</button>
+					</div>
+				{/if}
+			</main>
+			
+			<!-- Tags column (right) -->
+			<aside class="tags-column">
+				<div class="tags-list">
+					{#each tags as tag}
+						<span class="tag">
+							{tag}
+							<button type="button" class="tag-remove" onclick={() => removeTag(tag)} aria-label={i18n.t('action.delete')}>
+								×
+							</button>
+						</span>
+					{/each}
+				</div>
+				<input
+					type="text"
+					class="tag-input"
+					bind:value={newTag}
+					placeholder={i18n.t('editor.addTag')}
+					onkeydown={(e) => e.key === 'Enter' && addTag()}
+					onfocus={activateEditor}
+				/>
+			</aside>
 		</div>
 	</section>
 	
-	{#if !isFullscreen}
-		<!-- Statistics -->
-		<section class="stats-section">
-			<h2 class="section-title">{i18n.t('dashboard.statistics')}</h2>
-			<div class="stats-grid">
-				<div class="stat-card">
-					<span class="stat-value">{stats.notes}</span>
-					<span class="stat-label">{i18n.t('dashboard.stats.notes')}</span>
-				</div>
-				<div class="stat-card">
-					<span class="stat-value">{stats.documents}</span>
-					<span class="stat-label">{i18n.t('dashboard.stats.documents')}</span>
-				</div>
-				<div class="stat-card">
-					<span class="stat-value">{stats.storage}</span>
-					<span class="stat-label">{i18n.t('dashboard.stats.storage')}</span>
-				</div>
+	<!-- Statistics -->
+	<section class="stats-section">
+		<h2 class="section-title">{i18n.t('dashboard.statistics')}</h2>
+		<div class="stats-grid">
+			<div class="stat-card">
+				<span class="stat-value">{stats.notes}</span>
+				<span class="stat-label">{i18n.t('dashboard.stats.notes')}</span>
 			</div>
-		</section>
-		
-		<!-- Quick Actions -->
-		<section class="quick-actions">
-			<h2 class="section-title">{i18n.t('dashboard.quickActions')}</h2>
-			<div class="actions-grid">
-				<a href="/editor/new" class="action-card">
-					<span class="action-icon">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M12 20h9" />
-							<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-						</svg>
-					</span>
-					<span class="action-label">{i18n.t('dashboard.newNote')}</span>
+			<div class="stat-card">
+				<span class="stat-value">{stats.documents}</span>
+				<span class="stat-label">{i18n.t('dashboard.stats.documents')}</span>
+			</div>
+			<div class="stat-card">
+				<span class="stat-value">{stats.storage}</span>
+				<span class="stat-label">{i18n.t('dashboard.stats.storage')}</span>
+			</div>
+		</div>
+	</section>
+	
+	<!-- Quick Actions -->
+	<section class="quick-actions">
+		<h2 class="section-title">{i18n.t('dashboard.quickActions')}</h2>
+		<div class="actions-grid">
+			<a href="/editor/new" class="action-card">
+				<span class="action-icon">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M12 20h9" />
+						<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+					</svg>
+				</span>
+				<span class="action-label">{i18n.t('dashboard.newNote')}</span>
+			</a>
+			<a href="/literatur/upload" class="action-card">
+				<span class="action-icon">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+						<polyline points="17 8 12 3 7 8" />
+						<line x1="12" y1="3" x2="12" y2="15" />
+					</svg>
+				</span>
+				<span class="action-label">{i18n.t('dashboard.uploadDoc')}</span>
+			</a>
+		</div>
+	</section>
+	
+	<!-- Recent Notes -->
+	<section class="recent-section">
+		<h2 class="section-title">{i18n.t('dashboard.recentNotes')}</h2>
+		<div class="notes-list">
+			{#each recentNotes as note}
+				<a href="/editor/{note.id}" class="note-card">
+					<h3 class="note-title">{note.title}</h3>
+					<p class="note-excerpt">{note.excerpt}</p>
+					<span class="note-time">{formatTimeAgo(note.updatedAt)}</span>
 				</a>
-				<a href="/literatur/upload" class="action-card">
-					<span class="action-icon">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-							<polyline points="17 8 12 3 7 8" />
-							<line x1="12" y1="3" x2="12" y2="15" />
-						</svg>
-					</span>
-					<span class="action-label">{i18n.t('dashboard.uploadDoc')}</span>
-				</a>
-			</div>
-		</section>
-		
-		<!-- Recent Notes -->
-		<section class="recent-section">
-			<h2 class="section-title">{i18n.t('dashboard.recentNotes')}</h2>
-			<div class="notes-list">
-				{#each recentNotes as note}
-					<a href="/editor/{note.id}" class="note-card">
-						<h3 class="note-title">{note.title}</h3>
-						<p class="note-excerpt">{note.excerpt}</p>
-						<span class="note-time">{formatTimeAgo(note.updatedAt)}</span>
-					</a>
-				{/each}
-			</div>
-		</section>
+			{/each}
+		</div>
+	</section>
+	
+	<!-- Context menu for marginalia -->
+	{#if showContextMenu}
+		<div 
+			class="context-menu"
+			style="left: {contextMenuPosition.x}px; top: {contextMenuPosition.y}px"
+		>
+			<button 
+				type="button"
+				class="context-menu-item"
+				onclick={() => contextMenuTargetId && deleteMarginalia(contextMenuTargetId)}
+			>
+				{i18n.t('action.delete')}
+			</button>
+		</div>
 	{/if}
 </div>
 
@@ -299,97 +505,218 @@
 		margin-bottom: var(--space-6);
 	}
 	
-	/* Quick Note Section */
-	.quick-note-section {
+	/* QuickEdit Section - embedded editor with 3-column layout */
+	.quick-edit-section {
 		background: var(--color-bg-elevated);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius-md);
-		padding: var(--space-4);
 		margin-bottom: var(--space-6);
+		overflow: hidden;
 		transition: all var(--transition-normal);
 	}
 	
-	.quick-note-section.active {
+	.quick-edit-section.active {
 		border-color: var(--color-active);
-		box-shadow: 0 0 0 1px var(--color-active);
 	}
 	
-	.quick-note-section.fullscreen {
-		position: fixed;
-		top: var(--header-height);
-		left: 0;
-		right: 0;
-		bottom: var(--status-bar-height);
-		margin: 0;
-		border-radius: 0;
-		z-index: var(--z-modal);
+	.quick-edit-layout {
+		display: grid;
+		grid-template-columns: 120px 1fr 140px;
+		min-height: 200px;
+	}
+	
+	/* Marginalia column */
+	.marginalia-column {
+		position: relative;
+		padding: var(--space-3);
+		border-right: 1px solid var(--color-border-subtle);
+		cursor: crosshair;
+		min-height: 100%;
+	}
+	
+	.marginalia-note {
+		position: absolute;
+		left: var(--space-2);
+		right: var(--space-2);
 		display: flex;
-		flex-direction: column;
 	}
 	
-	.quick-note-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: var(--space-3);
-		margin-bottom: var(--space-3);
+	.marginalia-drag-handle {
+		width: 3px;
+		background: transparent;
+		cursor: grab;
+		flex-shrink: 0;
+		transition: background var(--transition-fast);
 	}
 	
-	.quick-note-title {
+	.marginalia-note:hover .marginalia-drag-handle,
+	.marginalia-note.dragging .marginalia-drag-handle,
+	.marginalia-note.editing .marginalia-drag-handle {
+		background: var(--color-active);
+	}
+	
+	.marginalia-textarea {
 		flex: 1;
-		font-family: var(--font-human);
-		font-size: var(--font-size-lg);
-		font-weight: 500;
-		color: var(--color-text);
+		min-height: 20px;
+		padding: var(--space-1);
+		font-family: var(--font-machine);
+		font-size: var(--font-size-xs);
+		line-height: var(--line-height-relaxed);
+		color: var(--color-text-secondary);
 		background: transparent;
 		border: none;
 		outline: none;
-		padding: var(--space-1) 0;
+		resize: none;
+		overflow: hidden;
+		field-sizing: content;
 	}
 	
-	.quick-note-title::placeholder {
-		color: var(--color-text-muted);
+	.marginalia-textarea:focus {
+		color: var(--color-text);
 	}
 	
-	.quick-note-actions {
+	/* Main editor area */
+	.quick-edit-main {
 		display: flex;
-		align-items: center;
-		gap: var(--space-2);
+		flex-direction: column;
+		padding: var(--space-4);
 	}
 	
-	.quick-note-editor {
-		min-height: 80px;
+	.quick-edit-editor {
+		flex: 1;
+		min-height: 120px;
 		font-family: var(--font-human);
 		font-size: var(--font-size-base);
 		color: var(--color-text);
 		cursor: text;
 	}
 	
-	.quick-note-section.fullscreen .quick-note-editor {
-		flex: 1;
-		overflow-y: auto;
-		padding: var(--space-4);
-	}
-	
-	.quick-note-placeholder,
-	.quick-note-loading {
+	.quick-edit-placeholder,
+	.quick-edit-loading {
 		color: var(--color-text-muted);
 		font-style: italic;
 	}
 	
-	/* Editor.js overrides for quick note */
-	.quick-note-editor :global(.codex-editor__redactor) {
-		padding-bottom: var(--space-4) !important;
+	.quick-edit-footer {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding-top: var(--space-3);
+		border-top: 1px solid var(--color-border-subtle);
+		margin-top: var(--space-3);
 	}
 	
-	.quick-note-editor :global(.ce-block__content) {
+	.save-indicator {
+		font-family: var(--font-machine);
+		font-size: var(--font-size-xs);
+		color: var(--color-text-muted);
+	}
+	
+	.save-indicator.saved { color: var(--color-success); }
+	.save-indicator.saving { color: var(--color-warning); }
+	
+	/* Tags column */
+	.tags-column {
+		padding: var(--space-3);
+		border-left: 1px solid var(--color-border-subtle);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+	
+	.tags-list {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+	}
+	
+	.tag {
+		display: inline-flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: var(--space-1) var(--space-2);
+		font-family: var(--font-machine);
+		font-size: var(--font-size-xs);
+		background: var(--color-bg-sunken);
+		border-radius: var(--radius-sm);
+		color: var(--color-text-secondary);
+	}
+	
+	.tag-remove {
+		margin-left: var(--space-1);
+		background: transparent;
+		border: none;
+		color: var(--color-text-muted);
+		cursor: pointer;
+		font-size: 12px;
+		padding: 0;
+		width: 14px;
+		height: 14px;
+	}
+	
+	.tag-remove:hover {
+		color: var(--color-error);
+	}
+	
+	.tag-input {
+		width: 100%;
+		padding: var(--space-1) var(--space-2);
+		font-family: var(--font-machine);
+		font-size: var(--font-size-xs);
+		color: var(--color-text);
+		background: var(--color-bg-sunken);
+		border: none;
+		border-radius: var(--radius-sm);
+		outline: none;
+	}
+	
+	/* Editor.js overrides */
+	.quick-edit-editor :global(.codex-editor__redactor) {
+		padding-bottom: var(--space-2) !important;
+	}
+	
+	.quick-edit-editor :global(.ce-block__content) {
 		max-width: 100%;
 	}
 	
-	/* Hide other sections when fullscreen */
-	.dashboard.has-fullscreen-editor .stats-section,
-	.dashboard.has-fullscreen-editor .quick-actions,
-	.dashboard.has-fullscreen-editor .recent-section {
-		display: none;
+	/* Context menu */
+	.context-menu {
+		position: fixed;
+		background: var(--color-bg-elevated);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		z-index: var(--z-dropdown);
+		min-width: 100px;
+	}
+	
+	.context-menu-item {
+		display: block;
+		width: 100%;
+		padding: var(--space-2) var(--space-3);
+		text-align: left;
+		font-family: var(--font-machine);
+		font-size: var(--font-size-sm);
+		color: var(--color-text);
+		background: transparent;
+		border: none;
+		cursor: pointer;
+	}
+	
+	.context-menu-item:hover {
+		background: var(--color-bg-hover);
+		color: var(--color-error);
+	}
+	
+	/* Responsive */
+	@media (max-width: 768px) {
+		.quick-edit-layout {
+			grid-template-columns: 1fr;
+		}
+		
+		.marginalia-column,
+		.tags-column {
+			display: none;
+		}
 	}
 </style>

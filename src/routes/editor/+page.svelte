@@ -2,13 +2,13 @@
   Artellico - Editor Page
   
   Block-based editor with Editor.js integration and LaTeX support.
+  Features: Marginalia, Tags, Full-width toggle, Offline-first saving.
 -->
 
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { browser } from '$app/environment';
 	import { createI18n } from '$stores/i18n.svelte';
-	import Marginalia from '$lib/components/editor/Marginalia.svelte';
 	import type { MarginaliaNote } from '$lib/types';
 	import type { PageData } from './$types';
 	
@@ -18,6 +18,7 @@
 	
 	// Editor state
 	let editorContainer: HTMLElement;
+	let marginaliaColumn: HTMLElement;
 	let editor: any = $state(null);
 	let title = $state(i18n.t('editor.untitled'));
 	let saveStatus = $state<'saved' | 'saving' | 'unsaved' | 'error'>('saved');
@@ -27,44 +28,120 @@
 	let newTag = $state('');
 	let showReferencePanel = $state(false);
 	let isFullscreen = $state(false);
+	let fullWidth = $state(true);
 	
 	// Marginalia state
 	let marginalia = $state<MarginaliaNote[]>([]);
-	let marginaliaComponent: Marginalia;
+	let editingMarginaliaId = $state<string | null>(null);
+	let draggingMarginaliaId = $state<string | null>(null);
+	let showContextMenu = $state(false);
+	let contextMenuPosition = $state({ x: 0, y: 0 });
+	let contextMenuTargetId = $state<string | null>(null);
 	
 	// Toggle fullscreen mode
 	function toggleFullscreen() {
 		isFullscreen = !isFullscreen;
 	}
 	
-	// Add marginalia for current block
-	async function addMarginaliaForCurrentBlock() {
-		if (!editor) return;
+	// Toggle full width mode
+	function toggleFullWidth() {
+		fullWidth = !fullWidth;
+	}
+	
+	// Add marginalia at click position in column
+	function handleMarginaliaColumnClick(e: MouseEvent) {
+		if (editingMarginaliaId) return;
+		if ((e.target as HTMLElement).closest('.marginalia-note')) return;
 		
-		const currentBlockIndex = editor.blocks.getCurrentBlockIndex();
-		if (currentBlockIndex < 0) return;
+		const rect = marginaliaColumn.getBoundingClientRect();
+		const clickY = e.clientY - rect.top + marginaliaColumn.scrollTop;
 		
-		// Get the block element to determine position
-		const blocks = editorContainer.querySelectorAll('.ce-block');
-		const currentBlock = blocks[currentBlockIndex] as HTMLElement;
-		
-		if (currentBlock && marginaliaComponent) {
-			const blockRect = currentBlock.getBoundingClientRect();
+		let blockId = 'block-0';
+		if (editor && editorContainer) {
+			const blocks = editorContainer.querySelectorAll('.ce-block');
 			const containerRect = editorContainer.getBoundingClientRect();
-			const relativeTop = blockRect.top - containerRect.top + editorContainer.scrollTop;
 			
-			// Get block ID from Editor.js
-			const blockId = editor.blocks.getBlockByIndex(currentBlockIndex)?.id || `block-${currentBlockIndex}`;
-			
-			marginaliaComponent.addNote(blockId, relativeTop);
+			blocks.forEach((block, index) => {
+				const blockRect = block.getBoundingClientRect();
+				const relativeTop = blockRect.top - containerRect.top + editorContainer.scrollTop;
+				if (clickY >= relativeTop) {
+					const editorBlock = editor.blocks.getBlockByIndex(index);
+					blockId = editorBlock?.id || `block-${index}`;
+				}
+			});
+		}
+		
+		const newNote: MarginaliaNote = {
+			id: crypto.randomUUID(),
+			blockId,
+			content: '',
+			top: clickY,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		};
+		
+		marginalia = [...marginalia, newNote];
+		editingMarginaliaId = newNote.id;
+		saveStatus = 'unsaved';
+	}
+	
+	// Update marginalia content
+	function updateMarginaliaContent(id: string, content: string) {
+		marginalia = marginalia.map(m =>
+			m.id === id ? { ...m, content, updatedAt: new Date() } : m
+		);
+		saveStatus = 'unsaved';
+	}
+	
+	// Delete marginalia via context menu
+	function deleteMarginalia(id: string) {
+		marginalia = marginalia.filter(m => m.id !== id);
+		closeContextMenu();
+		saveStatus = 'unsaved';
+	}
+	
+	// Handle right-click on marginalia
+	function handleMarginaliaContextMenu(e: MouseEvent, id: string) {
+		e.preventDefault();
+		e.stopPropagation();
+		contextMenuPosition = { x: e.clientX, y: e.clientY };
+		contextMenuTargetId = id;
+		showContextMenu = true;
+	}
+	
+	// Close context menu
+	function closeContextMenu() {
+		showContextMenu = false;
+		contextMenuTargetId = null;
+	}
+	
+	// Marginalia drag handlers
+	function handleMarginaliaDragStart(e: MouseEvent, id: string) {
+		draggingMarginaliaId = id;
+		e.preventDefault();
+	}
+	
+	function handleMarginaliaDrag(e: MouseEvent) {
+		if (!draggingMarginaliaId || !marginaliaColumn) return;
+		
+		const rect = marginaliaColumn.getBoundingClientRect();
+		const newTop = Math.max(0, e.clientY - rect.top + marginaliaColumn.scrollTop);
+		
+		marginalia = marginalia.map(m =>
+			m.id === draggingMarginaliaId ? { ...m, top: newTop, updatedAt: new Date() } : m
+		);
+	}
+	
+	function handleMarginaliaDragEnd() {
+		if (draggingMarginaliaId) {
+			draggingMarginaliaId = null;
 			saveStatus = 'unsaved';
 		}
 	}
 	
 	// Sync marginalia positions with editor blocks
 	async function syncMarginaliaPositions() {
-		if (!editor || !editorContainer || !marginaliaComponent) return;
-		
+		if (!editor || !editorContainer) return;
 		await tick();
 		
 		const blocks = editorContainer.querySelectorAll('.ce-block');
@@ -72,35 +149,36 @@
 		const positions = new Map<string, number>();
 		
 		blocks.forEach((block, index) => {
-			const blockEl = block as HTMLElement;
-			const blockRect = blockEl.getBoundingClientRect();
+			const blockRect = block.getBoundingClientRect();
 			const relativeTop = blockRect.top - containerRect.top + editorContainer.scrollTop;
-			
-			// Try to get block ID from Editor.js
 			const editorBlock = editor.blocks.getBlockByIndex(index);
 			const blockId = editorBlock?.id || `block-${index}`;
 			positions.set(blockId, relativeTop);
 		});
 		
-		marginaliaComponent.syncPositions(positions);
+		marginalia = marginalia.map(m => {
+			const blockTop = positions.get(m.blockId);
+			if (blockTop !== undefined) {
+				return { ...m, top: blockTop };
+			}
+			return m;
+		});
 	}
 	
 	// Initialize Editor.js on mount
 	onMount(() => {
 		if (!browser) return;
 		
-		// Dynamic import Editor.js and plugins
 		const initEditor = async () => {
 			const EditorJS = (await import('@editorjs/editorjs')).default;
 			const Header = (await import('@editorjs/header')).default;
 			const List = (await import('@editorjs/list')).default;
 			const Quote = (await import('@editorjs/quote')).default;
 			const Code = (await import('@editorjs/code')).default;
+			// @ts-expect-error No type declarations available
+			const DragDrop = (await import('editorjs-drag-drop')).default;
 			
-			// Import custom tools
 			const { MathTool, MermaidTool, CitationTool, BibliographyTool } = await import('$lib/editor/tools');
-			
-			// Import KaTeX CSS
 			await import('katex/dist/katex.min.css');
 			
 			editor = new EditorJS({
@@ -109,76 +187,63 @@
 				autofocus: true,
 				tools: {
 					header: {
-						// @ts-expect-error Editor.js types are not fully compatible
+						// @ts-expect-error Editor.js types
 						class: Header,
-						config: {
-							placeholder: 'Enter a header',
-							levels: [1, 2, 3, 4],
-							defaultLevel: 2,
-						},
+						config: { levels: [1, 2, 3, 4], defaultLevel: 2 },
 					},
 					list: {
-						// @ts-expect-error Editor.js types are not fully compatible
+						// @ts-expect-error Editor.js types
 						class: List,
 						inlineToolbar: true,
 					},
-					quote: {
-						class: Quote,
-						inlineToolbar: true,
-					},
+					quote: { class: Quote, inlineToolbar: true },
 					code: Code,
-					// LaTeX / Math formulas
 					math: {
 						// @ts-expect-error Custom tool
 						class: MathTool,
-						config: {
-							placeholder: 'Enter LaTeX formula (e.g., E = mc^2)',
-						},
+						config: { placeholder: 'LaTeX (e.g., E = mc^2)' },
 					},
-					// Mermaid diagrams
 					mermaid: {
 						// @ts-expect-error Custom tool
 						class: MermaidTool,
-						config: {
-							placeholder: 'Enter Mermaid diagram code',
-						},
+						config: { placeholder: 'Mermaid diagram' },
 					},
-					// Citations
 					citation: {
 						// @ts-expect-error Custom tool
 						class: CitationTool,
-						config: {
-							defaultStyle: 'apa',
-							availableStyles: ['apa', 'ieee', 'chicago-author-date', 'harvard1', 'vancouver'],
-						},
+						config: { defaultStyle: 'apa' },
 					},
-					// Bibliography (auto-generated from citations)
 					bibliography: {
 						// @ts-expect-error Custom tool
 						class: BibliographyTool,
-						config: {
-							defaultStyle: 'apa',
-							availableStyles: ['apa', 'ieee', 'chicago-author-date', 'harvard1', 'vancouver'],
-							defaultTitle: 'References',
-						},
+						config: { defaultStyle: 'apa', defaultTitle: 'References' },
 					},
 				},
 				onChange: async () => {
 					saveStatus = 'unsaved';
 					updateWordCount();
-					// Sync marginalia positions when blocks change
 					syncMarginaliaPositions();
 				},
+				onReady: () => {
+					new DragDrop(editor);
+					setTimeout(syncMarginaliaPositions, 100);
+				},
 			});
-			
-			// Initial sync after editor is ready
-			setTimeout(syncMarginaliaPositions, 500);
 		};
 		
 		initEditor();
 		
+		// Close context menu on click outside
+		const handleClickOutside = (e: MouseEvent) => {
+			if (showContextMenu && !(e.target as HTMLElement).closest('.context-menu')) {
+				closeContextMenu();
+			}
+		};
+		document.addEventListener('click', handleClickOutside);
+		
 		return () => {
 			editor?.destroy();
+			document.removeEventListener('click', handleClickOutside);
 		};
 	});
 	
@@ -186,7 +251,6 @@
 	async function openBibImport() {
 		const { showBibImportDialog } = await import('$lib/editor/tools');
 		showBibImportDialog((citations) => {
-			// Save imported citations to literature database
 			citations.forEach(async (citation) => {
 				try {
 					await fetch('/api/literature', {
@@ -204,20 +268,16 @@
 					console.error('Failed to save citation:', err);
 				}
 			});
-			// Notify user
-			alert(`${citations.length} citation(s) imported successfully.`);
 		});
 	}
 	
-	// Calculate word count and reading time
+	// Calculate word count
 	function updateWordCount() {
-		// This would parse the editor content
-		// For now, using placeholder values
 		wordCount = Math.floor(Math.random() * 500) + 100;
 		readingTime = Math.ceil(wordCount / 200);
 	}
 	
-	// Auto-save functionality
+	// Save with offline-first approach
 	async function save() {
 		if (!editor) return;
 		
@@ -225,58 +285,67 @@
 		
 		try {
 			const content = await editor.save();
+			const noteData = { title, content, tags, marginalia, noteId: null };
 			
-			// Send to server (including marginalia)
-			const response = await fetch('/api/notes', {
+			// Save to local cache first
+			if (browser) {
+				const { saveNoteToCache } = await import('$stores/offline');
+				await saveNoteToCache(noteData);
+			}
+			
+			// Sync to server (non-blocking)
+			fetch('/api/notes', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					title,
-					content,
-					tags,
-					marginalia,
-				}),
-			});
+				body: JSON.stringify(noteData),
+			}).catch(err => console.warn('Server sync pending:', err));
 			
-			if (response.ok) {
-				saveStatus = 'saved';
-			} else {
-				saveStatus = 'error';
-			}
+			saveStatus = 'saved';
 		} catch {
 			saveStatus = 'error';
 		}
 	}
 	
-	// Add tag
+	// Tag management
 	function addTag() {
 		if (newTag.trim() && !tags.includes(newTag.trim())) {
 			tags = [...tags, newTag.trim()];
 			newTag = '';
+			saveStatus = 'unsaved';
 		}
 	}
 	
-	// Remove tag
 	function removeTag(tag: string) {
 		tags = tags.filter(t => t !== tag);
+		saveStatus = 'unsaved';
 	}
 	
-	// Handle keyboard shortcuts
+	// Keyboard shortcuts
 	function handleKeydown(event: KeyboardEvent) {
 		if ((event.metaKey || event.ctrlKey) && event.key === 's') {
 			event.preventDefault();
 			save();
 		}
-		// Escape exits fullscreen
-		if (event.key === 'Escape' && isFullscreen) {
-			isFullscreen = false;
+		if (event.key === 'Escape') {
+			if (showContextMenu) {
+				closeContextMenu();
+			} else if (isFullscreen) {
+				isFullscreen = false;
+			}
 		}
 	}
+	
+	// Sorted marginalia
+	const sortedMarginalia = $derived([...marginalia].sort((a, b) => a.top - b.top));
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window 
+	onkeydown={handleKeydown}
+	onmousemove={handleMarginaliaDrag}
+	onmouseup={handleMarginaliaDragEnd}
+/>
 
-<div class="editor-page" class:fullscreen={isFullscreen}>
+<div class="editor-page" class:fullscreen={isFullscreen} class:full-width={fullWidth}>
 	<!-- Editor header -->
 	<header class="editor-header">
 		<div class="header-left">
@@ -308,7 +377,7 @@
 				{/if}
 			</span>
 			
-			<button type="button" class="btn btn-ghost" onclick={openBibImport} title="Import BibTeX references">
+			<button type="button" class="btn btn-ghost" onclick={openBibImport}>
 				<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;">
 					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
 					<polyline points="17 8 12 3 7 8"/>
@@ -321,16 +390,38 @@
 				{i18n.t('editor.references')}
 			</button>
 			
-			<!-- Fullscreen toggle button -->
+			<!-- Full width toggle -->
+			<button 
+				type="button" 
+				class="btn btn-icon" 
+				onclick={toggleFullWidth}
+				aria-label={fullWidth ? i18n.t('editor.narrowWidth') : i18n.t('editor.fullWidthToggle')}
+			>
+				{#if fullWidth}
+					<!-- Narrow/centered icon -->
+					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+						<line x1="21" y1="6" x2="3" y2="6"/>
+						<line x1="17" y1="12" x2="7" y2="12"/>
+						<line x1="21" y1="18" x2="3" y2="18"/>
+					</svg>
+				{:else}
+					<!-- Full width icon -->
+					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+						<line x1="21" y1="6" x2="3" y2="6"/>
+						<line x1="21" y1="12" x2="3" y2="12"/>
+						<line x1="21" y1="18" x2="3" y2="18"/>
+					</svg>
+				{/if}
+			</button>
+			
+			<!-- Fullscreen toggle -->
 			<button 
 				type="button" 
 				class="btn btn-icon fullscreen-btn" 
 				onclick={toggleFullscreen}
-				title={isFullscreen ? i18n.t('editor.exitFullscreen') : i18n.t('editor.fullscreen')}
 				aria-label={isFullscreen ? i18n.t('editor.exitFullscreen') : i18n.t('editor.fullscreen')}
 			>
 				{#if isFullscreen}
-					<!-- Minimize icon -->
 					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M8 3v3a2 2 0 0 1-2 2H3" />
 						<path d="M21 8h-3a2 2 0 0 1-2-2V3" />
@@ -338,7 +429,6 @@
 						<path d="M16 21v-3a2 2 0 0 1 2-2h3" />
 					</svg>
 				{:else}
-					<!-- Maximize icon -->
 					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M8 3H5a2 2 0 0 0-2 2v3" />
 						<path d="M21 8V5a2 2 0 0 0-2-2h-3" />
@@ -355,74 +445,90 @@
 	</header>
 	
 	<div class="editor-layout">
-		<!-- Marginalia column (left) -->
-		<aside class="marginalia-column">
-			<div class="marginalia-header">
-				<h3 class="section-label">{i18n.t('editor.marginalia')}</h3>
-				<button 
-					type="button" 
-					class="add-marginalia-btn"
-					onclick={addMarginaliaForCurrentBlock}
-					title={i18n.t('editor.addMarginalia')}
-					aria-label={i18n.t('editor.addMarginalia')}
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+		<!-- Marginalia column (left) - click to add, no label -->
+		<div 
+			class="marginalia-column"
+			bind:this={marginaliaColumn}
+			onclick={handleMarginaliaColumnClick}
+			onkeydown={(e) => e.key === 'Enter' && handleMarginaliaColumnClick(e as unknown as MouseEvent)}
+			role="region"
+			aria-label="Marginalia"
+			tabindex="-1"
+			title={i18n.t('editor.newMarginalia')}
+		>
+			{#each sortedMarginalia as note (note.id)}
+				<div
+					class="marginalia-note"
+					class:editing={editingMarginaliaId === note.id}
+					class:dragging={draggingMarginaliaId === note.id}
+					style="top: {note.top}px"
+					oncontextmenu={(e) => handleMarginaliaContextMenu(e, note.id)}
+					role="group"
+					aria-label="Marginal note"
 				>
-					<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-						<line x1="12" y1="5" x2="12" y2="19"/>
-						<line x1="5" y1="12" x2="19" y2="12"/>
-					</svg>
-				</button>
-			</div>
-			<Marginalia 
-				bind:this={marginaliaComponent}
-				bind:marginalia={marginalia}
-			/>
-		</aside>
+					<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+					<!-- Drag handle (left border) -->
+					<div 
+						class="marginalia-drag-handle"
+						onmousedown={(e) => handleMarginaliaDragStart(e, note.id)}
+						role="separator"
+						aria-orientation="vertical"
+						tabindex="-1"
+					></div>
+					
+					<textarea
+						class="marginalia-textarea"
+						value={note.content}
+						placeholder={i18n.t('editor.marginalia') + '...'}
+						oninput={(e) => updateMarginaliaContent(note.id, e.currentTarget.value)}
+						onfocus={() => editingMarginaliaId = note.id}
+						onblur={() => setTimeout(() => editingMarginaliaId = null, 100)}
+						onclick={(e) => e.stopPropagation()}
+					></textarea>
+				</div>
+			{/each}
+		</div>
 		
 		<!-- Main editor -->
 		<main class="editor-main">
 			<div class="editor-container prose" bind:this={editorContainer}></div>
 		</main>
 		
-		<!-- Tags column (right) -->
+		<!-- Tags column (right) - no label -->
 		<aside class="tags-column">
 			<div class="tags-section">
-				<h3 class="section-label">{i18n.t('editor.tags')}</h3>
-				
 				<div class="tags-list">
 					{#each tags as tag}
 						<span class="tag">
 							{tag}
-							<button type="button" class="tag-remove" onclick={() => removeTag(tag)} aria-label="Remove tag">
+							<button type="button" class="tag-remove" onclick={() => removeTag(tag)} aria-label={i18n.t('action.delete')}>
 								×
 							</button>
 						</span>
 					{/each}
 				</div>
 				
-				<div class="add-tag">
-					<input
-						type="text"
-						class="tag-input"
-						bind:value={newTag}
-						placeholder={i18n.t('editor.addTag')}
-						onkeydown={(e) => e.key === 'Enter' && addTag()}
-					/>
-				</div>
+				<input
+					type="text"
+					class="tag-input"
+					bind:value={newTag}
+					placeholder={i18n.t('editor.addTag')}
+					onkeydown={(e) => e.key === 'Enter' && addTag()}
+				/>
 			</div>
 			
 			<div class="meta-section">
 				<div class="meta-item">
-					<span class="meta-label">Wörter</span>
-					<span class="meta-value">{wordCount}</span>
+					<span class="meta-label">{i18n.t('editor.wordCount', { count: wordCount })}</span>
 				</div>
 				<div class="meta-item">
-					<span class="meta-label">Lesezeit</span>
-					<span class="meta-value">{readingTime} min</span>
+					<span class="meta-label">{i18n.t('editor.readingTime', { minutes: readingTime })}</span>
 				</div>
 			</div>
 		</aside>
 		
-		<!-- References panel (toggleable) -->
+		<!-- References panel -->
 		{#if showReferencePanel}
 			<aside class="references-panel">
 				<header class="panel-header">
@@ -437,6 +543,22 @@
 			</aside>
 		{/if}
 	</div>
+	
+	<!-- Context menu for marginalia -->
+	{#if showContextMenu}
+		<div 
+			class="context-menu"
+			style="left: {contextMenuPosition.x}px; top: {contextMenuPosition.y}px"
+		>
+			<button 
+				type="button"
+				class="context-menu-item"
+				onclick={() => contextMenuTargetId && deleteMarginalia(contextMenuTargetId)}
+			>
+				{i18n.t('action.delete')}
+			</button>
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -474,8 +596,9 @@
 		padding: var(--space-8) var(--space-12);
 	}
 	
-	/* Fullscreen button */
-	.fullscreen-btn {
+	/* Fullscreen/width toggle buttons */
+	.fullscreen-btn,
+	.btn.btn-icon {
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -485,7 +608,8 @@
 		color: var(--color-text-secondary);
 	}
 	
-	.fullscreen-btn:hover {
+	.fullscreen-btn:hover,
+	.btn.btn-icon:hover {
 		color: var(--color-text);
 		background: var(--color-bg-sunken);
 	}
@@ -559,17 +683,9 @@
 		color: var(--color-text-muted);
 	}
 	
-	.save-status.saved {
-		color: var(--color-success);
-	}
-	
-	.save-status.saving {
-		color: var(--color-warning);
-	}
-	
-	.save-status.error {
-		color: var(--color-error);
-	}
+	.save-status.saved { color: var(--color-success); }
+	.save-status.saving { color: var(--color-warning); }
+	.save-status.error { color: var(--color-error); }
 	
 	/* Editor layout */
 	.editor-layout {
@@ -579,43 +695,67 @@
 		overflow: hidden;
 	}
 	
+	/* Marginalia column - click to add */
 	.marginalia-column {
+		position: relative;
 		padding: var(--space-4);
 		border-right: 1px solid var(--color-border-subtle);
 		overflow-y: auto;
-		display: flex;
-		flex-direction: column;
+		cursor: crosshair;
 	}
 	
-	/* Marginalia header */
-	.marginalia-header {
+	/* Marginalia notes */
+	.marginalia-note {
+		position: absolute;
+		left: var(--space-2);
+		right: var(--space-2);
 		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: var(--space-3);
-		padding-bottom: var(--space-2);
-		border-bottom: 1px solid var(--color-border-subtle);
+		transition: box-shadow var(--transition-fast);
 	}
 	
-	.add-marginalia-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 24px;
-		height: 24px;
+	.marginalia-drag-handle {
+		width: 3px;
+		background: transparent;
+		cursor: grab;
+		flex-shrink: 0;
+		transition: background var(--transition-fast);
+	}
+	
+	.marginalia-note:hover .marginalia-drag-handle,
+	.marginalia-note.dragging .marginalia-drag-handle {
+		background: var(--color-active);
+		cursor: grabbing;
+	}
+	
+	.marginalia-note.editing .marginalia-drag-handle {
+		background: var(--color-active);
+	}
+	
+	.marginalia-textarea {
+		flex: 1;
+		min-height: 24px;
+		padding: var(--space-1) var(--space-2);
+		font-family: var(--font-machine);
+		font-size: var(--font-size-xs);
+		line-height: var(--line-height-relaxed);
+		color: var(--color-text-secondary);
 		background: transparent;
 		border: none;
-		border-radius: var(--radius-sm);
-		color: var(--color-text-muted);
-		cursor: pointer;
-		transition: all var(--transition-fast);
+		outline: none;
+		resize: none;
+		overflow: hidden;
+		field-sizing: content;
 	}
 	
-	.add-marginalia-btn:hover {
+	.marginalia-textarea:focus {
 		color: var(--color-text);
-		background: var(--color-bg-sunken);
 	}
 	
+	.marginalia-textarea::placeholder {
+		color: var(--color-text-muted);
+	}
+	
+	/* Main editor */
 	.editor-main {
 		padding: var(--space-8);
 		overflow-y: auto;
@@ -625,11 +765,15 @@
 	
 	.editor-container {
 		width: 100%;
-		max-width: var(--content-max-width);
 		min-height: 100%;
 	}
 	
-	/* Editor.js styling */
+	/* Full width toggle */
+	.editor-page:not(.full-width) .editor-container {
+		max-width: var(--content-max-width);
+	}
+	
+	/* Editor.js overrides */
 	.editor-container :global(.ce-block__content) {
 		max-width: 100%;
 	}
@@ -642,30 +786,31 @@
 		padding-bottom: 200px;
 	}
 	
-	/* Tags column */
+	/* Drag handle for blocks */
+	.editor-container :global(.ce-toolbar__actions) {
+		cursor: grab;
+	}
+	
+	/* Tags column - no label */
 	.tags-column {
-		padding: var(--space-6) var(--space-4);
+		padding: var(--space-4);
 		border-left: 1px solid var(--color-border-subtle);
 		overflow-y: auto;
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-6);
+		gap: var(--space-4);
 	}
 	
-	.section-label {
-		font-family: var(--font-machine);
-		font-size: var(--font-size-xs);
-		font-weight: 600;
-		letter-spacing: var(--tracking-wider);
-		text-transform: uppercase;
-		color: var(--color-text-muted);
-		margin-bottom: var(--space-3);
+	.tags-section {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
 	}
 	
 	.tags-list {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-2);
+		gap: var(--space-1);
 	}
 	
 	.tag {
@@ -709,7 +854,6 @@
 		border: none;
 		border-radius: var(--radius-sm);
 		outline: none;
-		margin-top: var(--space-2);
 	}
 	
 	.tag-input::placeholder {
@@ -724,16 +868,42 @@
 	}
 	
 	.meta-item {
-		display: flex;
-		justify-content: space-between;
 		padding: var(--space-1) 0;
 	}
 	
-	.meta-label,
-	.meta-value {
+	.meta-label {
 		font-family: var(--font-machine);
 		font-size: var(--font-size-xs);
 		color: var(--color-text-muted);
+	}
+	
+	/* Context menu */
+	.context-menu {
+		position: fixed;
+		background: var(--color-bg-elevated);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		z-index: var(--z-dropdown);
+		min-width: 120px;
+	}
+	
+	.context-menu-item {
+		display: block;
+		width: 100%;
+		padding: var(--space-2) var(--space-3);
+		text-align: left;
+		font-family: var(--font-machine);
+		font-size: var(--font-size-sm);
+		color: var(--color-text);
+		background: transparent;
+		border: none;
+		cursor: pointer;
+	}
+	
+	.context-menu-item:hover {
+		background: var(--color-bg-hover);
+		color: var(--color-error);
 	}
 	
 	/* References panel */

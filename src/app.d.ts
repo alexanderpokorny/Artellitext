@@ -6,6 +6,9 @@
 
 import type { SessionUser, Session } from '$lib/types';
 
+// Module declarations for packages without types
+declare module 'editorjs-drag-drop';
+
 declare global {
 	namespace App {
 		interface Locals {

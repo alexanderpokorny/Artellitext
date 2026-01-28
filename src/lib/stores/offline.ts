@@ -348,3 +348,39 @@ class OfflineStore {
 
 // Singleton instance
 export const offlineStore = new OfflineStore();
+
+// ===========================================
+// CONVENIENCE FUNCTIONS
+// ===========================================
+
+/**
+ * Save a note to the local cache (IndexedDB).
+ * This is the primary method for offline-first saving.
+ */
+export async function saveNoteToCache(noteData: {
+	noteId?: string | null;
+	title: string;
+	content: unknown;
+	tags: string[];
+	marginalia: unknown[];
+}): Promise<void> {
+	const note = {
+		id: noteData.noteId || crypto.randomUUID(),
+		title: noteData.title,
+		content: noteData.content,
+		tags: noteData.tags,
+		marginalia: noteData.marginalia,
+		updatedAt: new Date().toISOString(),
+		createdAt: new Date().toISOString(),
+		userId: 'local', // Will be set properly after sync
+	};
+	
+	await offlineStore.saveNote(note as any);
+	
+	// Add to sync queue for server sync
+	await offlineStore.addToSyncQueue({
+		type: 'note',
+		action: noteData.noteId ? 'update' : 'create',
+		data: note,
+	});
+}

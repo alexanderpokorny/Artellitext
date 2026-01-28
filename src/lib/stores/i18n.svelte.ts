@@ -78,8 +78,11 @@ export const translations = {
 		'editor.references': 'Referenzen',
 		'editor.marginalia': 'Marginalie',
 		'editor.addMarginalia': 'Marginalie hinzufügen',
+		'editor.newMarginalia': 'Neuer Marginaltext',
 		'editor.fullscreen': 'Vollbild',
 		'editor.exitFullscreen': 'Vollbild beenden',
+		'editor.fullWidthToggle': 'Volle Breite',
+		'editor.narrowWidth': 'Zentriert',
 		
 		// Literature
 		'literature.title': 'Bibliothek',
@@ -210,8 +213,11 @@ export const translations = {
 		'editor.references': 'References',
 		'editor.marginalia': 'Marginalia',
 		'editor.addMarginalia': 'Add marginalia',
+		'editor.newMarginalia': 'New marginal note',
 		'editor.fullscreen': 'Fullscreen',
 		'editor.exitFullscreen': 'Exit fullscreen',
+		'editor.fullWidthToggle': 'Full width',
+		'editor.narrowWidth': 'Centered',
 		
 		// Literature
 		'literature.title': 'Library',
@@ -342,8 +348,11 @@ export const translations = {
 		'editor.references': 'Références',
 		'editor.marginalia': 'Marginalia',
 		'editor.addMarginalia': 'Ajouter marginalia',
+		'editor.newMarginalia': 'Nouvelle note marginale',
 		'editor.fullscreen': 'Plein écran',
 		'editor.exitFullscreen': 'Quitter le plein écran',
+		'editor.fullWidthToggle': 'Pleine largeur',
+		'editor.narrowWidth': 'Centré',
 		
 		// Literature
 		'literature.title': 'Bibliothèque',
@@ -474,8 +483,11 @@ export const translations = {
 		'editor.references': 'Referencias',
 		'editor.marginalia': 'Marginalia',
 		'editor.addMarginalia': 'Añadir marginalia',
+		'editor.newMarginalia': 'Nueva nota marginal',
 		'editor.fullscreen': 'Pantalla completa',
 		'editor.exitFullscreen': 'Salir de pantalla completa',
+		'editor.fullWidthToggle': 'Ancho completo',
+		'editor.narrowWidth': 'Centrado',
 		
 		// Literature
 		'literature.title': 'Biblioteca',
@@ -606,8 +618,11 @@ export const translations = {
 		'editor.references': 'Riferimenti',
 		'editor.marginalia': 'Marginalia',
 		'editor.addMarginalia': 'Aggiungi marginalia',
+		'editor.newMarginalia': 'Nuova nota marginale',
 		'editor.fullscreen': 'Schermo intero',
 		'editor.exitFullscreen': 'Esci da schermo intero',
+		'editor.fullWidthToggle': 'Larghezza completa',
+		'editor.narrowWidth': 'Centrato',
 		
 		// Literature
 		'literature.title': 'Biblioteca',
