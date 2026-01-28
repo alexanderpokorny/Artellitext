@@ -1,0 +1,103 @@
+# ===========================================
+# Artellitext - Docker Compose for Development
+# ===========================================
+#
+# Lokale Entwicklungsumgebung mit allen Services.
+#
+# Usage:
+#   docker-compose up -d          # Alle Services starten
+#   docker-compose logs -f        # Logs anzeigen
+#   docker-compose down           # Stoppen
+#   docker-compose down -v        # Stoppen + Volumes löschen
+#
+# Services:
+#   - PostgreSQL 17 + pgvector (Port 5432)
+#   - MinIO S3-kompatibel (API: 9000, Console: 9001)
+#
+# Nach dem Start:
+#   1. npm run dev                # SvelteKit starten
+#   2. http://localhost:5173      # App öffnen
+#   3. http://localhost:9001      # MinIO Console (minioadmin/minioadmin)
+
+services:
+  # ===========================================
+  # PostgreSQL 17 + pgvector
+  # ===========================================
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: pgvector-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-Artellitext}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata-dev:/var/lib/postgresql/data
+      - ./scripts/sql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-Artellitext}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - artellitext-dev
+
+  # ===========================================
+  # MinIO (S3-kompatibel) - Optional für Dev
+  # ===========================================
+  minio:
+    image: minio/minio:latest
+    container_name: minio-dev
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - artellitext-dev
+
+  # ===========================================
+  # MinIO Setup (Bucket erstellen)
+  # ===========================================
+  minio-setup:
+    image: minio/mc:latest
+    container_name: minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc mb myminio/artellitext --ignore-existing;
+      mc anonymous set download myminio/artellitext/public;
+      echo 'MinIO Bucket artellitext created';
+      exit 0;
+      "
+    networks:
+      - artellitext-dev
+
+# ===========================================
+# Volumes & Networks
+# ===========================================
+volumes:
+  pgdata-dev:
+    name: artellitext-pgdata-dev
+  minio-data:
+    name: artellitext-minio-data
+
+networks:
+  artellitext-dev:
+    name: artellitext-dev
+    driver: bridge

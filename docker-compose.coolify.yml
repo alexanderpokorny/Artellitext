@@ -1,5 +1,5 @@
 # ===========================================
-# Artellico - Docker Compose for Coolify
+# Artellitext - Docker Compose for Coolify
 # ===========================================
 #
 # Optimiert für Coolify Deployment.
@@ -11,6 +11,9 @@
 #
 # Database wird EXTERN von Coolify verwaltet
 # (existierende PostgreSQL Instanz nutzen)
+#
+# MinIO wird EXTERN von Coolify verwaltet
+# (existierende MinIO Instanz nutzen)
 
 services:
   # ===========================================
@@ -23,23 +26,29 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
+      # Database (von Coolify PostgreSQL Service)
       - DATABASE_URL=${DATABASE_URL}
+      # Session Security (generieren mit: openssl rand -base64 32)
       - SESSION_SECRET=${SESSION_SECRET}
+      # Application
       - BODY_SIZE_LIMIT=Infinity
       - PUBLIC_APP_URL=${PUBLIC_APP_URL:-https://app.artellitext.com}
-      - PUBLIC_APP_NAME=${PUBLIC_APP_NAME:-Artellico}
-      # MinIO Storage
-      - STORAGE_ENDPOINT=${STORAGE_ENDPOINT}
-      - STORAGE_BUCKET=${STORAGE_BUCKET}
-      - STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY}
-      - STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY}
-      - STORAGE_REGION=${STORAGE_REGION:-eu-central-1}
-      # AI Features (optional)
+      - PUBLIC_APP_NAME=${PUBLIC_APP_NAME:-Artellitext}
+      # Storage (MinIO/S3 von Coolify)
+      - S3_ENDPOINT=${S3_ENDPOINT:-${STORAGE_ENDPOINT}}
+      - S3_BUCKET=${S3_BUCKET:-${STORAGE_BUCKET:-artellitext}}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY:-${STORAGE_ACCESS_KEY}}
+      - S3_SECRET_KEY=${S3_SECRET_KEY:-${STORAGE_SECRET_KEY}}
+      - S3_REGION=${S3_REGION:-${STORAGE_REGION:-eu-central-1}}
+      - S3_FORCE_PATH_STYLE=true
+      # AI Features (optional - BYOK)
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       # Feature Flags
       - PUBLIC_ENABLE_GEOLOCATION=${PUBLIC_ENABLE_GEOLOCATION:-false}
       - PUBLIC_ENABLE_AI_FEATURES=${PUBLIC_ENABLE_AI_FEATURES:-false}
+      - PUBLIC_ENABLE_OFFLINE=${PUBLIC_ENABLE_OFFLINE:-true}
+      - PUBLIC_ENABLE_TEXT_ANALYSIS=${PUBLIC_ENABLE_TEXT_ANALYSIS:-true}
       # Payment (optional)
       - LEMONSQUEEZY_API_KEY=${LEMONSQUEEZY_API_KEY:-}
       - LEMONSQUEEZY_WEBHOOK_SECRET=${LEMONSQUEEZY_WEBHOOK_SECRET:-}
