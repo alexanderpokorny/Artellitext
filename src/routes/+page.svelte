@@ -474,6 +474,15 @@
 		}
 	}
 	
+	// Handle click outside expanded editor to close it
+	function handleEditorClickOutside(event: MouseEvent) {
+		const target = event.target as HTMLElement;
+		// Check if click is outside the inline-expanded-editor
+		if (expandedNoteId && !target.closest('.inline-expanded-editor')) {
+			closeExpandedEditor();
+		}
+	}
+	
 	// Cleanup on unmount
 	onMount(() => {
 		const handleClickOutside = (e: MouseEvent) => {
@@ -518,7 +527,8 @@
 	onmouseup={handleMarginaliaDragEnd}
 />
 
-<div class="dashboard">
+<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+<div class="dashboard" onclick={handleEditorClickOutside}>
 	<!-- Notes List with View Options -->
 	<section class="notes-section" onblur={handleEditorBlur}>
 		<div class="notes-header">
@@ -672,45 +682,74 @@
 			<!-- Existing notes -->
 			{#each sortedNotes() as note (note.id)}
 				{#if expandedNoteId === note.id}
-					<!-- Inline Expanded Editor -->
-					<div class="inline-expanded-editor">
-						<div class="expanded-editor-header">
-							<input
-								type="text"
-								class="expanded-title-input"
-								bind:value={expandedNoteTitle}
-								placeholder={i18n.t('editor.untitled')}
-								oninput={() => expandedSaveStatus = 'unsaved'}
-							/>
-							<div class="expanded-header-actions">
-								<span class="expanded-save-status" class:saved={expandedSaveStatus === 'saved'} class:saving={expandedSaveStatus === 'saving'}>
-									{#if expandedSaveStatus === 'saved'}
-										{i18n.t('editor.saved')}
-									{:else if expandedSaveStatus === 'saving'}
-										{i18n.t('editor.saving')}
-									{:else}
-										●
-									{/if}
-								</span>
-								<button type="button" class="btn btn-ghost btn-sm" onclick={() => goto(`/editor/${expandedNoteId}`)}>
-									{i18n.t('editor.fullscreen')}
-								</button>
-								<button type="button" class="btn btn-ghost btn-sm" onclick={closeExpandedEditor} aria-label={i18n.t('action.close')}>
-									<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-										<line x1="18" y1="6" x2="6" y2="18" />
-										<line x1="6" y1="6" x2="18" y2="18" />
-									</svg>
-								</button>
-							</div>
-						</div>
-						
-						<div class="expanded-editor-layout">
-							<!-- Left Sidebar -->
+					<!-- Inline Expanded Editor with unified sticky header -->
+					<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+					<div class="inline-expanded-editor" onclick={(e) => e.stopPropagation()}>
+						<!-- Unified Sticky Header: Left Tabs | Title + Fullscreen | Right Tabs -->
+						<div class="unified-editor-header">
+							<!-- Left sidebar tabs -->
 							<EditorSidebar 
 								side="left" 
 								tabs={expandedLeftTabs} 
 								activeTab={expandedLeftTab}
 								onTabChange={(id) => expandedLeftTab = id as 'marginalia' | 'spellcheck'}
+								showTabsOnly={true}
+							/>
+							
+							<!-- Central header with title and fullscreen -->
+							<div class="central-header">
+								<input
+									type="text"
+									class="title-input"
+									bind:value={expandedNoteTitle}
+									placeholder={i18n.t('editor.untitled')}
+									oninput={() => expandedSaveStatus = 'unsaved'}
+								/>
+								<div class="header-actions">
+									<span class="save-status" class:saved={expandedSaveStatus === 'saved'} class:saving={expandedSaveStatus === 'saving'}>
+										{#if expandedSaveStatus === 'saved'}
+											✓
+										{:else if expandedSaveStatus === 'saving'}
+											...
+										{:else}
+											●
+										{/if}
+									</span>
+									<button 
+										type="button" 
+										class="fullscreen-btn" 
+										onclick={() => goto(`/editor/${expandedNoteId}`)}
+										title={i18n.t('editor.fullscreen')}
+									>
+										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+											<path d="M8 3H5a2 2 0 0 0-2 2v3" />
+											<path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+											<path d="M3 16v3a2 2 0 0 0 2 2h3" />
+											<path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+										</svg>
+									</button>
+								</div>
+							</div>
+							
+							<!-- Right sidebar tabs -->
+							<EditorSidebar 
+								side="right" 
+								tabs={expandedRightTabs} 
+								activeTab={expandedRightTab}
+								onTabChange={(id) => expandedRightTab = id as 'stats' | 'tags'}
+								showTabsOnly={true}
+							/>
+						</div>
+						
+						<!-- Editor content area -->
+						<div class="expanded-editor-body">
+							<!-- Left Sidebar Content -->
+							<EditorSidebar 
+								side="left" 
+								tabs={expandedLeftTabs} 
+								activeTab={expandedLeftTab}
+								onTabChange={(id) => expandedLeftTab = id as 'marginalia' | 'spellcheck'}
+								stickyContent={false}
 							>
 								{#if expandedLeftTab === 'marginalia'}
 									<div class="marginalia-content">
@@ -743,12 +782,13 @@
 								<div class="expanded-editor-container prose" bind:this={expandedEditorContainer}></div>
 							</main>
 							
-							<!-- Right Sidebar -->
+							<!-- Right Sidebar Content -->
 							<EditorSidebar 
 								side="right" 
 								tabs={expandedRightTabs} 
 								activeTab={expandedRightTab}
 								onTabChange={(id) => expandedRightTab = id as 'stats' | 'tags'}
+								stickyContent={expandedRightTab === 'stats'}
 							>
 								{#if expandedRightTab === 'stats'}
 									<TextStatsPanel stats={expandedTextStats} />
@@ -1197,53 +1237,84 @@
 		border-radius: var(--radius-md);
 		overflow: hidden;
 		min-height: 500px;
+		max-height: 80vh;
 	}
 	
-	.expanded-editor-header {
+	/* Unified Sticky Header */
+	.unified-editor-header {
+		display: grid;
+		grid-template-columns: var(--margin-column-width) 1fr var(--tag-column-width);
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		background: var(--color-bg-sunken);
+		border-bottom: 1px solid var(--color-border-subtle);
+	}
+	
+	.central-header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: var(--space-4);
-		padding: var(--space-3) var(--space-4);
-		border-bottom: 1px solid var(--color-border-subtle);
+		gap: var(--space-3);
+		padding: var(--space-2) var(--space-4);
 		background: var(--color-bg);
+		border-left: 1px solid var(--color-border-subtle);
+		border-right: 1px solid var(--color-border-subtle);
 	}
 	
-	.expanded-title-input {
+	.title-input {
 		flex: 1;
-		max-width: 500px;
-		padding: var(--space-2);
+		padding: var(--space-1) var(--space-2);
 		font-family: var(--font-human);
-		font-size: var(--font-size-lg);
+		font-size: var(--font-size-base);
 		font-weight: 500;
 		color: var(--color-text);
 		background: transparent;
 		border: none;
-		border-bottom: 2px solid transparent;
+		border-bottom: 1px solid transparent;
 		outline: none;
 		transition: border-color var(--transition-fast);
 	}
 	
-	.expanded-title-input:focus {
+	.title-input:focus {
 		border-bottom-color: var(--color-active);
 	}
 	
-	.expanded-header-actions {
+	.header-actions {
 		display: flex;
 		align-items: center;
 		gap: var(--space-2);
 	}
 	
-	.expanded-save-status {
+	.save-status {
 		font-family: var(--font-machine);
 		font-size: var(--font-size-xs);
 		color: var(--color-text-muted);
 	}
 	
-	.expanded-save-status.saved { color: var(--color-success); }
-	.expanded-save-status.saving { color: var(--color-warning); }
+	.save-status.saved { color: var(--color-success); }
+	.save-status.saving { color: var(--color-warning); }
 	
-	.expanded-editor-layout {
+	.fullscreen-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: var(--space-1);
+		background: transparent;
+		border: none;
+		color: var(--color-text-muted);
+		cursor: pointer;
+		border-radius: var(--radius-sm);
+		transition: all var(--transition-fast);
+	}
+	
+	.fullscreen-btn:hover {
+		color: var(--color-text);
+		background: var(--color-bg-hover);
+	}
+	
+	/* Editor Body (content area below header) */
+	.expanded-editor-body {
 		display: grid;
 		grid-template-columns: var(--margin-column-width) 1fr var(--tag-column-width);
 		flex: 1;
@@ -1251,7 +1322,7 @@
 	}
 	
 	.expanded-editor-main {
-		padding: var(--space-8);
+		padding: var(--space-4);
 		overflow-y: auto;
 		display: flex;
 		justify-content: center;
@@ -1273,7 +1344,7 @@
 	}
 	
 	.expanded-editor-container :global(.codex-editor__redactor) {
-		padding-bottom: 200px;
+		padding-bottom: 100px;
 	}
 	
 	/* Expanded view reuses sidebar styles from EditorSidebar */
@@ -1366,12 +1437,15 @@
 	
 	/* Mobile: Hide sidebars in expanded view */
 	@media (max-width: 1024px) {
-		.expanded-editor-layout {
+		.unified-editor-header {
+			grid-template-columns: auto 1fr auto;
+		}
+		
+		.expanded-editor-body {
 			grid-template-columns: 1fr;
 		}
 		
-		.expanded-editor-layout > :first-child,
-		.expanded-editor-layout > :last-child {
+		.expanded-editor-body > .editor-sidebar {
 			display: none;
 		}
 	}
@@ -1392,12 +1466,17 @@
 			grid-template-columns: 1fr;
 		}
 		
-		.expanded-editor-header {
-			flex-wrap: wrap;
+		.unified-editor-header {
+			grid-template-columns: 1fr;
 		}
 		
-		.expanded-title-input {
-			max-width: 100%;
+		.central-header {
+			padding: var(--space-2);
+			border: none;
+		}
+		
+		.sidebar-tabs-standalone {
+			display: none;
 		}
 	}
 </style>
