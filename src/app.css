@@ -2607,31 +2607,107 @@ html.high-contrast .tag {
 	opacity: 1;
 }
 
-/* Position toolbox (slash menu) to the left */
+/* Position toolbox (slash menu) */
 .ce-toolbox {
+	position: absolute !important;
 	left: 0 !important;
 	transform: translateX(0) !important;
 	z-index: 1000 !important;
-	position: absolute !important;
 }
 
-/* Ensure toolbox appears properly on slash trigger */
+/* Slash menu (toolbox) - clean card style */
 .ce-toolbox--opened {
+	position: absolute !important;
 	left: 0 !important;
 	z-index: 1000 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	visibility: visible !important;
+	opacity: 1 !important;
+	min-width: 200px;
+	max-width: 280px;
+	max-height: 350px;
+	overflow-y: auto;
 	background: var(--color-bg-elevated);
 	border: 1px solid var(--color-border);
 	border-radius: var(--radius-md);
 	box-shadow: var(--shadow-lg);
-	display: flex !important;
-	visibility: visible !important;
-	opacity: 1 !important;
+	padding: var(--space-2);
 }
 
-/* Style the toolbox for better readability */
+/* Hide the default search input styling, restyle */
+.ce-toolbox__search {
+	padding: var(--space-2);
+	margin-bottom: var(--space-2);
+	border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.ce-toolbox__search input {
+	width: 100%;
+	padding: var(--space-2) var(--space-3);
+	font-family: var(--font-machine);
+	font-size: var(--font-size-sm);
+	color: var(--color-text);
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	outline: none;
+}
+
+.ce-toolbox__search input:focus {
+	border-color: var(--color-active);
+}
+
+.ce-toolbox__search input::placeholder {
+	color: var(--color-text-muted);
+}
+
+/* Toolbox buttons - clean list style */
 .ce-toolbox__button {
-	justify-content: flex-start !important;
-	padding-left: var(--space-2) !important;
+	display: flex !important;
+	align-items: center;
+	gap: var(--space-3);
+	width: 100%;
+	padding: var(--space-2) var(--space-3) !important;
+	font-family: var(--font-machine);
+	font-size: var(--font-size-sm);
+	color: var(--color-text);
+	background: transparent;
+	border: none;
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+	text-align: left;
+	transition: background var(--transition-fast);
+}
+
+.ce-toolbox__button:hover {
+	background: var(--color-bg-hover);
+}
+
+.ce-toolbox__button--active {
+	background: var(--color-bg-hover);
+	color: var(--color-active);
+}
+
+/* Tool icon in toolbox */
+.ce-toolbox__button svg {
+	width: 20px;
+	height: 20px;
+	flex-shrink: 0;
+	color: var(--color-text-secondary);
+}
+
+.ce-toolbox__button:hover svg,
+.ce-toolbox__button--active svg {
+	color: var(--color-text);
+}
+
+/* Tool name/title */
+.ce-toolbox__button-title {
+	flex: 1;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 /* Settings gear button (block tune button) - visible on hover */

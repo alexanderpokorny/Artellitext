@@ -1012,10 +1012,10 @@
 		overflow: hidden;
 	}
 	
-	/* Inline mode sizing */
+	/* Inline mode sizing - grows with content */
 	.editor-core.inline-mode {
 		min-height: 300px;
-		max-height: 70vh;
+		/* No max-height - editor grows with content */
 	}
 	
 	/* Fullscreen mode sizing */
@@ -1027,7 +1027,7 @@
 	
 	/* Dark mode */
 	:global(html.dark) .editor-core {
-		background: #000;
+		background: var(--color-bg-sunken);
 	}
 	
 	/* Header */
@@ -1053,7 +1053,7 @@
 	}
 	
 	:global(html.dark) .header-center {
-		background: #000;
+		background: var(--color-bg-sunken);
 	}
 	
 	.title-input {
@@ -1157,7 +1157,12 @@
 		display: grid;
 		grid-template-columns: var(--margin-column-width) 1fr var(--tag-column-width);
 		flex: 1;
-		overflow-y: auto;  /* Entire body scrolls together */
+		overflow: visible;  /* No internal scrolling - page scrolls */
+	}
+	
+	/* Fullscreen mode needs scrolling within body */
+	.editor-core.fullscreen-mode .editor-core-body {
+		overflow-y: auto;
 		overflow-x: hidden;
 	}
 	
@@ -1171,7 +1176,7 @@
 	}
 	
 	:global(html.dark) .editor-main {
-		background: #000;
+		background: var(--color-bg-sunken);
 	}
 	
 	.editor-container {
@@ -1202,6 +1207,7 @@
 		position: relative;
 		min-height: 200px;
 		cursor: crosshair;
+		background: var(--color-bg-sunken);
 	}
 	
 	.marginalia-note {
