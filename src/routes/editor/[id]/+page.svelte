@@ -8,6 +8,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { browser } from '$app/environment';
+	import { goto } from '$app/navigation';
 	import { createI18n } from '$stores/i18n.svelte';
 	import type { MarginaliaNote } from '$lib/types';
 	import type { PageData } from './$types';
@@ -30,7 +31,6 @@
 	let tags = $state<string[]>(data.note?.tags || []);
 	let newTag = $state('');
 	let showReferencePanel = $state(false);
-	let isFullscreen = $state(false);
 	let fullWidth = $state(true);
 	
 	// Marginalia state
@@ -41,9 +41,12 @@
 	let contextMenuPosition = $state({ x: 0, y: 0 });
 	let contextMenuTargetId = $state<string | null>(null);
 	
-	// Toggle fullscreen mode
-	function toggleFullscreen() {
-		isFullscreen = !isFullscreen;
+	// Return to dashboard (exit fullscreen mode)
+	async function exitToInline() {
+		if (saveStatus === 'unsaved' && editor) {
+			await save();
+		}
+		goto('/');
 	}
 	
 	// Toggle full width mode
@@ -349,8 +352,9 @@
 		if (event.key === 'Escape') {
 			if (showContextMenu) {
 				closeContextMenu();
-			} else if (isFullscreen) {
-				isFullscreen = false;
+			} else {
+				// ESC exits to dashboard
+				exitToInline();
 			}
 		}
 	}
@@ -365,7 +369,7 @@
 	onmouseup={handleMarginaliaDragEnd}
 />
 
-<div class="editor-page" class:fullscreen={isFullscreen} class:full-width={fullWidth}>
+<div class="editor-page is-fullscreen" class:full-width={fullWidth}>
 	<!-- Editor header -->
 	<header class="editor-header">
 		<div class="header-left">
@@ -433,28 +437,21 @@
 				{/if}
 			</button>
 			
-			<!-- Fullscreen toggle -->
+			<!-- Exit fullscreen (return to dashboard with inline editor) -->
 			<button 
 				type="button" 
-				class="btn btn-icon fullscreen-btn" 
-				onclick={toggleFullscreen}
-				aria-label={isFullscreen ? i18n.t('editor.exitFullscreen') : i18n.t('editor.fullscreen')}
+				class="btn btn-icon fullscreen-btn active" 
+				onclick={exitToInline}
+				aria-label={i18n.t('editor.exitFullscreen')}
+				title={i18n.t('editor.exitFullscreen')}
 			>
-				{#if isFullscreen}
-					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M8 3v3a2 2 0 0 1-2 2H3" />
-						<path d="M21 8h-3a2 2 0 0 1-2-2V3" />
-						<path d="M3 16h3a2 2 0 0 1 2 2v3" />
-						<path d="M16 21v-3a2 2 0 0 1 2-2h3" />
-					</svg>
-				{:else}
-					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M8 3H5a2 2 0 0 0-2 2v3" />
-						<path d="M21 8V5a2 2 0 0 0-2-2h-3" />
-						<path d="M3 16v3a2 2 0 0 0 2 2h3" />
-						<path d="M16 21h3a2 2 0 0 0 2-2v-3" />
-					</svg>
-				{/if}
+				<!-- Exit fullscreen icon (arrows pointing inward) -->
+				<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M8 3v3a2 2 0 0 1-2 2H3" />
+					<path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+					<path d="M3 16h3a2 2 0 0 1 2 2v3" />
+					<path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+				</svg>
 			</button>
 			
 			<button type="button" class="btn btn-primary" onclick={save}>
@@ -587,30 +584,6 @@
 		margin: calc(-1 * var(--site-padding));
 		background: var(--color-bg-elevated);
 		transition: all var(--transition-normal);
-	}
-	
-	.editor-page.fullscreen {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		height: 100vh;
-		margin: 0;
-		z-index: var(--z-modal);
-	}
-	
-	.editor-page.fullscreen .marginalia-column,
-	.editor-page.fullscreen .tags-column {
-		display: none;
-	}
-	
-	.editor-page.fullscreen .editor-layout {
-		grid-template-columns: 1fr;
-	}
-	
-	.editor-page.fullscreen .editor-main {
-		padding: var(--space-8) var(--space-12);
 	}
 	
 	.fullscreen-btn,

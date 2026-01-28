@@ -81,8 +81,9 @@ export const translations = {
 		'editor.newMarginalia': 'Neuer Marginaltext',
 		'editor.fullscreen': 'Vollbild',
 		'editor.exitFullscreen': 'Vollbild beenden',
+		'editor.expandWidth': 'Breite erweitern',
+		'editor.narrowWidth': 'Breite verkleinern',
 		'editor.fullWidthToggle': 'Volle Breite',
-		'editor.narrowWidth': 'Zentriert',
 		
 		// Literature
 		'literature.title': 'Bibliothek',
@@ -282,8 +283,9 @@ export const translations = {
 		'editor.newMarginalia': 'New marginal note',
 		'editor.fullscreen': 'Fullscreen',
 		'editor.exitFullscreen': 'Exit fullscreen',
+		'editor.expandWidth': 'Expand width',
+		'editor.narrowWidth': 'Narrow width',
 		'editor.fullWidthToggle': 'Full width',
-		'editor.narrowWidth': 'Centered',
 		
 		// Literature
 		'literature.title': 'Library',
@@ -483,8 +485,9 @@ export const translations = {
 		'editor.newMarginalia': 'Nouvelle note marginale',
 		'editor.fullscreen': 'Plein écran',
 		'editor.exitFullscreen': 'Quitter le plein écran',
+		'editor.expandWidth': 'Élargir',
+		'editor.narrowWidth': 'Rétrécir',
 		'editor.fullWidthToggle': 'Pleine largeur',
-		'editor.narrowWidth': 'Centré',
 		
 		// Literature
 		'literature.title': 'Bibliothèque',
@@ -684,8 +687,9 @@ export const translations = {
 		'editor.newMarginalia': 'Nueva nota marginal',
 		'editor.fullscreen': 'Pantalla completa',
 		'editor.exitFullscreen': 'Salir de pantalla completa',
+		'editor.expandWidth': 'Expandir ancho',
+		'editor.narrowWidth': 'Reducir ancho',
 		'editor.fullWidthToggle': 'Ancho completo',
-		'editor.narrowWidth': 'Centrado',
 		
 		// Literature
 		'literature.title': 'Biblioteca',
@@ -885,8 +889,9 @@ export const translations = {
 		'editor.newMarginalia': 'Nuova nota marginale',
 		'editor.fullscreen': 'Schermo intero',
 		'editor.exitFullscreen': 'Esci da schermo intero',
+		'editor.expandWidth': 'Espandi larghezza',
+		'editor.narrowWidth': 'Riduci larghezza',
 		'editor.fullWidthToggle': 'Larghezza completa',
-		'editor.narrowWidth': 'Centrato',
 		
 		// Literature
 		'literature.title': 'Biblioteca',

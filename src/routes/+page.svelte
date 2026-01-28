@@ -76,8 +76,11 @@
 	let expandedTextStats = $state<TextStats>(getEmptyStats());
 	let expandedSaveStatus = $state<'saved' | 'saving' | 'unsaved'>('saved');
 	let expandedLeftTab = $state<'marginalia' | 'spellcheck'>('marginalia');
-	let expandedRightTab = $state<'stats' | 'tags' | 'references'>('stats');
+let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 	
+	// Width mode for inline editor (wide/narrow)
+	let expandedWidthMode = $state<'narrow' | 'wide'>('narrow');
+
 	// Tab configurations for expanded editor
 	const expandedLeftTabs = [
 		{ id: 'marginalia', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>', tooltipKey: 'sidebar.marginalia' },
@@ -85,9 +88,9 @@
 	];
 	
 	const expandedRightTabs = [
-		{ id: 'stats', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>', tooltipKey: 'sidebar.stats' },
 		{ id: 'tags', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>', tooltipKey: 'sidebar.tags' },
 		{ id: 'references', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>', tooltipKey: 'sidebar.references' },
+		{ id: 'stats', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>', tooltipKey: 'sidebar.stats' },
 	];
 	
 	// Sorted notes
@@ -819,7 +822,7 @@
 				{#if expandedNoteId === note.id}
 					<!-- Inline Expanded Editor with unified sticky header -->
 					<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-					<div class="inline-expanded-editor" onclick={(e) => e.stopPropagation()}>
+					<div class="inline-expanded-editor" class:wide-mode={expandedWidthMode === 'wide'} onclick={(e) => e.stopPropagation()}>
 						<!-- Unified Sticky Header: Left Tabs | Title + Fullscreen | Right Tabs -->
 						<div class="unified-editor-header">
 							<!-- Left sidebar tabs -->
@@ -852,26 +855,49 @@
 									</span>
 									<button 
 										type="button" 
-										class="fullscreen-btn" 
-										onclick={() => goto(`/editor/${expandedNoteId}`)}
-										title={i18n.t('editor.fullscreen')}
-									>
-										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-											<path d="M8 3H5a2 2 0 0 0-2 2v3" />
-											<path d="M21 8V5a2 2 0 0 0-2-2h-3" />
-											<path d="M3 16v3a2 2 0 0 0 2 2h3" />
-											<path d="M16 21h3a2 2 0 0 0 2-2v-3" />
-										</svg>
-									</button>
+											class="width-toggle-btn" 
+											class:wide={expandedWidthMode === 'wide'}
+											onclick={() => expandedWidthMode = expandedWidthMode === 'narrow' ? 'wide' : 'narrow'}
+											title={expandedWidthMode === 'narrow' ? i18n.t('editor.expandWidth') : i18n.t('editor.narrowWidth')}
+										>
+											{#if expandedWidthMode === 'narrow'}
+												<!-- Expand width icon -->
+												<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+													<path d="M21 12H3" />
+													<path d="M15 6l6 6-6 6" />
+													<path d="M9 18l-6-6 6-6" />
+												</svg>
+											{:else}
+												<!-- Collapse width icon -->
+												<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+													<path d="M12 3v18" />
+													<path d="M18 9l-6-6-6 6" />
+													<path d="M6 15l6 6 6-6" />
+												</svg>
+											{/if}
+										</button>
+										<button 
+											type="button" 
+											class="fullscreen-btn" 
+											onclick={() => goto(`/editor/${expandedNoteId}`)}
+											title={i18n.t('editor.fullscreen')}
+										>
+											<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+												<path d="M8 3H5a2 2 0 0 0-2 2v3" />
+												<path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+												<path d="M3 16v3a2 2 0 0 0 2 2h3" />
+												<path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+											</svg>
+										</button>
+									</div>
 								</div>
-							</div>
 							
 							<!-- Right sidebar tabs -->
 							<EditorSidebar 
 								side="right" 
 								tabs={expandedRightTabs} 
 								activeTab={expandedRightTab}
-								onTabChange={(id) => expandedRightTab = id as 'stats' | 'tags'}
+								onTabChange={(id) => expandedRightTab = id as 'tags' | 'references' | 'stats'}
 								showTabsOnly={true}
 							/>
 						</div>
@@ -922,12 +948,10 @@
 								side="right" 
 								tabs={expandedRightTabs} 
 								activeTab={expandedRightTab}
-								onTabChange={(id) => expandedRightTab = id as 'stats' | 'tags' | 'references'}
+								onTabChange={(id) => expandedRightTab = id as 'tags' | 'references' | 'stats'}
 								stickyContent={expandedRightTab === 'stats'}
 							>
-								{#if expandedRightTab === 'stats'}
-									<TextStatsPanel stats={expandedTextStats} />
-								{:else if expandedRightTab === 'tags'}
+								{#if expandedRightTab === 'tags'}
 									<div class="tags-content">
 										<div class="tags-list">
 											{#each expandedNoteTags as tag}
@@ -970,6 +994,8 @@
 										</div>
 										<p class="sidebar-empty-hint">{i18n.t('references.empty')}</p>
 									</div>
+								{:else if expandedRightTab === 'stats'}
+									<TextStatsPanel stats={expandedTextStats} />
 								{/if}
 							</EditorSidebar>
 						</div>
@@ -1002,9 +1028,15 @@
 						
 						<div class="note-card-footer">
 							<span class="note-time">{formatTimeAgo(note.updated_at)}</span>
-							{#if note.word_count}
-								<span class="note-words">{note.word_count} {i18n.t('editor.words')}</span>
-							{/if}
+							<span class="note-preview-symbol" title={getExcerpt(note, 50)}>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+									<polyline points="14 2 14 8 20 8" />
+									<line x1="16" y1="13" x2="8" y2="13" />
+									<line x1="16" y1="17" x2="8" y2="17" />
+									<polyline points="10 9 9 9 8 9" />
+								</svg>
+							</span>
 						</div>
 					</button>
 				{/if}
@@ -1461,6 +1493,17 @@
 		color: var(--color-text-muted);
 	}
 	
+	.note-preview-symbol {
+		display: flex;
+		align-items: center;
+		color: var(--color-text-muted);
+		opacity: 0.6;
+	}
+	
+	.note-preview-symbol:hover {
+		opacity: 1;
+	}
+	
 	/* Load more trigger */
 	.load-more-trigger {
 		display: flex;
@@ -1492,8 +1535,14 @@
 		border: 1px solid var(--color-active);
 		border-radius: var(--radius-md);
 		overflow: hidden;
-		min-height: 500px;
+		min-height: 100px;
 		max-height: 80vh;
+	}
+	
+	/* Wide mode for inline editor */
+	.inline-expanded-editor.wide-mode {
+		max-height: none;
+		min-height: 60vh;
 	}
 	
 	/* Light theme: same background as marginalia */
@@ -1588,6 +1637,29 @@
 		background: var(--color-bg-hover);
 	}
 	
+	/* Width toggle button */
+	.width-toggle-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: var(--space-1);
+		background: transparent;
+		border: none;
+		color: var(--color-text-muted);
+		cursor: pointer;
+		border-radius: var(--radius-sm);
+		transition: all var(--transition-fast);
+	}
+	
+	.width-toggle-btn:hover {
+		color: var(--color-text);
+		background: var(--color-bg-hover);
+	}
+	
+	.width-toggle-btn.wide {
+		color: var(--color-active);
+	}
+	
 	/* Editor Body (content area below header) */
 	.expanded-editor-body {
 		display: grid;
@@ -1597,7 +1669,7 @@
 	}
 	
 	.expanded-editor-main {
-		padding: var(--space-4);
+		padding: var(--space-6) var(--space-8);
 		overflow-y: auto;
 		display: flex;
 		justify-content: center;

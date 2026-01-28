@@ -607,6 +607,17 @@ html.dark .logo-dark {
 	background: var(--color-bg-sunken);
 }
 
+/* Active state for fullscreen button */
+.fullscreen-btn.active {
+	color: var(--color-active);
+	background: var(--color-bg-sunken);
+}
+
+.fullscreen-btn.active:hover {
+	color: var(--color-active);
+	background: var(--color-bg-hover);
+}
+
 .btn-sm {
 	padding: var(--space-1) var(--space-3);
 }
@@ -2456,14 +2467,20 @@ html.high-contrast .tag {
    EDITOR.JS UI OVERRIDES
    =========================================== */
 
-/* Hide the Plus button and tooltip - everything via slash command only */
+/* Plus button - hidden, use slash command instead */
 .ce-toolbar__plus {
 	display: none !important;
 }
 
-/* Hide the toolbar actions (settings button on left) */
+/* Toolbar actions (settings/move buttons) - show on block hover */
 .ce-toolbar__actions {
-	display: none !important;
+	opacity: 0.3;
+	transition: opacity var(--transition-fast);
+}
+
+.ce-block--focused .ce-toolbar__actions,
+.ce-toolbar:hover .ce-toolbar__actions {
+	opacity: 1;
 }
 
 /* Position toolbox (slash menu) to the left */
@@ -2481,4 +2498,93 @@ html.high-contrast .tag {
 .ce-toolbox__button {
 	justify-content: flex-start !important;
 	padding-left: var(--space-2) !important;
+}
+
+/* Settings gear button (block tune button) - visible on hover */
+.ce-toolbar__settings-btn {
+	display: flex !important;
+	opacity: 0.4;
+	transition: opacity var(--transition-fast);
+}
+
+.ce-toolbar__settings-btn:hover {
+	opacity: 1;
+}
+
+/* Block settings popover */
+.ce-popover {
+	background: var(--color-bg-elevated);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-lg);
+	z-index: 100;
+}
+
+.ce-popover__item {
+	color: var(--color-text);
+}
+
+.ce-popover__item:hover {
+	background: var(--color-bg-hover);
+}
+
+/* DragDrop handles - from editorjs-drag-drop */
+.ce-block__content {
+	position: relative;
+}
+
+.ce-block--drop-target .ce-block__content::before {
+	content: '';
+	position: absolute;
+	top: -2px;
+	left: 0;
+	right: 0;
+	height: 4px;
+	background: var(--color-active);
+	border-radius: 2px;
+}
+
+.ce-block--dragging {
+	opacity: 0.5;
+	cursor: grabbing;
+}
+
+/* Block tune wrapper (settings menu) */
+.ce-settings {
+	background: var(--color-bg-elevated);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-lg);
+}
+
+.ce-settings__button {
+	color: var(--color-text);
+}
+
+.ce-settings__button:hover {
+	background: var(--color-bg-hover);
+}
+
+.ce-settings__button--delete:hover {
+	color: var(--color-error);
+}
+
+/* Inline toolbar styling */
+.ce-inline-toolbar {
+	background: var(--color-bg-elevated);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-md);
+}
+
+.ce-inline-tool {
+	color: var(--color-text);
+}
+
+.ce-inline-tool:hover {
+	background: var(--color-bg-hover);
+}
+
+.ce-inline-tool--active {
+	color: var(--color-active);
 }
