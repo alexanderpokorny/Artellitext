@@ -518,115 +518,7 @@
 	onmouseup={handleMarginaliaDragEnd}
 />
 
-<div class="dashboard" class:has-expanded={expandedNoteId !== null}>
-	<!-- Expanded Editor View (full-width with sidebars, no header) -->
-	{#if expandedNoteId}
-		<div class="expanded-editor-overlay">
-			<div class="expanded-editor-header">
-				<input
-					type="text"
-					class="expanded-title-input"
-					bind:value={expandedNoteTitle}
-					placeholder={i18n.t('editor.untitled')}
-					oninput={() => expandedSaveStatus = 'unsaved'}
-				/>
-				<div class="expanded-header-actions">
-					<span class="expanded-save-status" class:saved={expandedSaveStatus === 'saved'} class:saving={expandedSaveStatus === 'saving'}>
-						{#if expandedSaveStatus === 'saved'}
-							{i18n.t('editor.saved')}
-						{:else if expandedSaveStatus === 'saving'}
-							{i18n.t('editor.saving')}
-						{:else}
-							●
-						{/if}
-					</span>
-					<button type="button" class="btn btn-ghost btn-sm" onclick={() => goto(`/editor/${expandedNoteId}`)}>
-						{i18n.t('editor.fullscreen')}
-					</button>
-					<button type="button" class="btn btn-ghost btn-sm" onclick={closeExpandedEditor} aria-label={i18n.t('action.close')}>
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<line x1="18" y1="6" x2="6" y2="18" />
-							<line x1="6" y1="6" x2="18" y2="18" />
-						</svg>
-					</button>
-				</div>
-			</div>
-			
-			<div class="expanded-editor-layout">
-				<!-- Left Sidebar -->
-				<EditorSidebar 
-					side="left" 
-					tabs={expandedLeftTabs} 
-					activeTab={expandedLeftTab}
-					onTabChange={(id) => expandedLeftTab = id as 'marginalia' | 'spellcheck'}
-				>
-					{#if expandedLeftTab === 'marginalia'}
-						<div class="marginalia-content">
-							{#each expandedMarginalia as note (note.id)}
-								<div class="marginalia-note">
-									<textarea
-										class="marginalia-textarea"
-										value={note.content}
-										placeholder={i18n.t('editor.marginalia') + '...'}
-										oninput={(e) => {
-											note.content = e.currentTarget.value;
-											expandedSaveStatus = 'unsaved';
-										}}
-									></textarea>
-								</div>
-							{/each}
-							{#if expandedMarginalia.length === 0}
-								<p class="sidebar-empty-hint">{i18n.t('editor.newMarginalia')}</p>
-							{/if}
-						</div>
-					{:else if expandedLeftTab === 'spellcheck'}
-						<div class="spellcheck-content">
-							<p class="sidebar-empty-hint">Rechtschreibprüfung wird in einer zukünftigen Version verfügbar sein.</p>
-						</div>
-					{/if}
-				</EditorSidebar>
-				
-				<!-- Main Editor -->
-				<main class="expanded-editor-main">
-					<div class="expanded-editor-container prose" bind:this={expandedEditorContainer}></div>
-				</main>
-				
-				<!-- Right Sidebar -->
-				<EditorSidebar 
-					side="right" 
-					tabs={expandedRightTabs} 
-					activeTab={expandedRightTab}
-					onTabChange={(id) => expandedRightTab = id as 'stats' | 'tags'}
-				>
-					{#if expandedRightTab === 'stats'}
-						<TextStatsPanel stats={expandedTextStats} />
-					{:else if expandedRightTab === 'tags'}
-						<div class="tags-content">
-							<div class="tags-list">
-								{#each expandedNoteTags as tag}
-									<span class="tag">
-										{tag}
-										<button type="button" class="tag-remove" onclick={() => removeExpandedTag(tag)} aria-label={i18n.t('action.delete')}>
-											×
-										</button>
-									</span>
-								{/each}
-							</div>
-							
-							<input
-								type="text"
-								class="tag-input"
-								bind:value={expandedNewTag}
-								placeholder={i18n.t('editor.addTag')}
-								onkeydown={(e) => e.key === 'Enter' && addExpandedTag()}
-							/>
-						</div>
-					{/if}
-				</EditorSidebar>
-			</div>
-		</div>
-	{/if}
-	
+<div class="dashboard">
 	<!-- Notes List with View Options -->
 	<section class="notes-section" onblur={handleEditorBlur}>
 		<div class="notes-header">
@@ -779,10 +671,118 @@
 			
 			<!-- Existing notes -->
 			{#each sortedNotes() as note (note.id)}
+				{#if expandedNoteId === note.id}
+					<!-- Inline Expanded Editor -->
+					<div class="inline-expanded-editor">
+						<div class="expanded-editor-header">
+							<input
+								type="text"
+								class="expanded-title-input"
+								bind:value={expandedNoteTitle}
+								placeholder={i18n.t('editor.untitled')}
+								oninput={() => expandedSaveStatus = 'unsaved'}
+							/>
+							<div class="expanded-header-actions">
+								<span class="expanded-save-status" class:saved={expandedSaveStatus === 'saved'} class:saving={expandedSaveStatus === 'saving'}>
+									{#if expandedSaveStatus === 'saved'}
+										{i18n.t('editor.saved')}
+									{:else if expandedSaveStatus === 'saving'}
+										{i18n.t('editor.saving')}
+									{:else}
+										●
+									{/if}
+								</span>
+								<button type="button" class="btn btn-ghost btn-sm" onclick={() => goto(`/editor/${expandedNoteId}`)}>
+									{i18n.t('editor.fullscreen')}
+								</button>
+								<button type="button" class="btn btn-ghost btn-sm" onclick={closeExpandedEditor} aria-label={i18n.t('action.close')}>
+									<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<line x1="18" y1="6" x2="6" y2="18" />
+										<line x1="6" y1="6" x2="18" y2="18" />
+									</svg>
+								</button>
+							</div>
+						</div>
+						
+						<div class="expanded-editor-layout">
+							<!-- Left Sidebar -->
+							<EditorSidebar 
+								side="left" 
+								tabs={expandedLeftTabs} 
+								activeTab={expandedLeftTab}
+								onTabChange={(id) => expandedLeftTab = id as 'marginalia' | 'spellcheck'}
+							>
+								{#if expandedLeftTab === 'marginalia'}
+									<div class="marginalia-content">
+										{#each expandedMarginalia as margNote (margNote.id)}
+											<div class="marginalia-note">
+												<textarea
+													class="marginalia-textarea"
+													value={margNote.content}
+													placeholder={i18n.t('editor.marginalia') + '...'}
+													oninput={(e) => {
+														margNote.content = e.currentTarget.value;
+														expandedSaveStatus = 'unsaved';
+													}}
+												></textarea>
+											</div>
+										{/each}
+										{#if expandedMarginalia.length === 0}
+											<p class="sidebar-empty-hint">{i18n.t('editor.newMarginalia')}</p>
+										{/if}
+									</div>
+								{:else if expandedLeftTab === 'spellcheck'}
+									<div class="spellcheck-content">
+										<p class="sidebar-empty-hint">Rechtschreibprüfung wird in einer zukünftigen Version verfügbar sein.</p>
+									</div>
+								{/if}
+							</EditorSidebar>
+							
+							<!-- Main Editor -->
+							<main class="expanded-editor-main">
+								<div class="expanded-editor-container prose" bind:this={expandedEditorContainer}></div>
+							</main>
+							
+							<!-- Right Sidebar -->
+							<EditorSidebar 
+								side="right" 
+								tabs={expandedRightTabs} 
+								activeTab={expandedRightTab}
+								onTabChange={(id) => expandedRightTab = id as 'stats' | 'tags'}
+							>
+								{#if expandedRightTab === 'stats'}
+									<TextStatsPanel stats={expandedTextStats} />
+								{:else if expandedRightTab === 'tags'}
+									<div class="tags-content">
+										<div class="tags-list">
+											{#each expandedNoteTags as tag}
+												<span class="tag">
+													{tag}
+													<button type="button" class="tag-remove" onclick={() => removeExpandedTag(tag)} aria-label={i18n.t('action.delete')}>
+														×
+													</button>
+												</span>
+											{/each}
+										</div>
+										
+										<input
+											type="text"
+											class="tag-input"
+											bind:value={expandedNewTag}
+											placeholder={i18n.t('editor.addTag')}
+											onkeydown={(e) => e.key === 'Enter' && addExpandedTag()}
+										/>
+									</div>
+								{/if}
+							</EditorSidebar>
+						</div>
+					</div>
+				{:else}
+					<!-- Regular Note Card -->
 					<button
 						type="button"
 						class="note-card"
-						class:expanded={expandedNoteId === note.id || viewMode === 'expanded'}
+						class:expanded={viewMode === 'expanded'}
 						onclick={() => handleNoteClick(note.id)}
 					>
 						<div class="note-card-header">
@@ -799,8 +799,8 @@
 							{/if}
 						</div>
 						
-						{#if viewMode !== 'list' || expandedNoteId === note.id}
-							<p class="note-excerpt">{getExcerpt(note, viewMode === 'expanded' || expandedNoteId === note.id ? 500 : 150)}</p>
+						{#if viewMode !== 'list'}
+							<p class="note-excerpt">{getExcerpt(note, viewMode === 'expanded' ? 500 : 150)}</p>
 						{/if}
 						
 						<div class="note-card-footer">
@@ -810,7 +810,8 @@
 							{/if}
 						</div>
 					</button>
-				{/each}
+				{/if}
+			{/each}
 		</div>
 		
 		<!-- Load more trigger -->
@@ -1186,21 +1187,16 @@
 		to { transform: rotate(360deg); }
 	}
 	
-	/* Expanded Editor Overlay */
-	.dashboard.has-expanded .notes-section {
-		display: none;
-	}
-	
-	.expanded-editor-overlay {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: var(--color-bg);
-		z-index: var(--z-modal);
+	/* Inline Expanded Editor */
+	.inline-expanded-editor {
+		grid-column: 1 / -1;
 		display: flex;
 		flex-direction: column;
+		background: var(--color-bg);
+		border: 1px solid var(--color-active);
+		border-radius: var(--radius-md);
+		overflow: hidden;
+		min-height: 500px;
 	}
 	
 	.expanded-editor-header {
@@ -1281,11 +1277,11 @@
 	}
 	
 	/* Expanded view reuses sidebar styles from EditorSidebar */
-	.expanded-editor-overlay .marginalia-content {
+	.inline-expanded-editor .marginalia-content {
 		min-height: 200px;
 	}
 	
-	.expanded-editor-overlay .sidebar-empty-hint {
+	.inline-expanded-editor .sidebar-empty-hint {
 		font-family: var(--font-machine);
 		font-size: var(--font-size-xs);
 		color: var(--color-text-muted);
@@ -1293,19 +1289,19 @@
 		padding: var(--space-4);
 	}
 	
-	.expanded-editor-overlay .tags-content {
+	.inline-expanded-editor .tags-content {
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-3);
 	}
 	
-	.expanded-editor-overlay .tags-list {
+	.inline-expanded-editor .tags-list {
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-1);
 	}
 	
-	.expanded-editor-overlay .tag {
+	.inline-expanded-editor .tag {
 		display: inline-flex;
 		align-items: center;
 		justify-content: space-between;
@@ -1317,7 +1313,7 @@
 		color: var(--color-text-secondary);
 	}
 	
-	.expanded-editor-overlay .tag-remove {
+	.inline-expanded-editor .tag-remove {
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -1332,11 +1328,11 @@
 		line-height: 1;
 	}
 	
-	.expanded-editor-overlay .tag-remove:hover {
+	.inline-expanded-editor .tag-remove:hover {
 		color: var(--color-error);
 	}
 	
-	.expanded-editor-overlay .tag-input {
+	.inline-expanded-editor .tag-input {
 		width: 100%;
 		padding: var(--space-2);
 		font-family: var(--font-machine);
@@ -1348,11 +1344,11 @@
 		outline: none;
 	}
 	
-	.expanded-editor-overlay .marginalia-note {
+	.inline-expanded-editor .marginalia-note {
 		margin-bottom: var(--space-2);
 	}
 	
-	.expanded-editor-overlay .marginalia-textarea {
+	.inline-expanded-editor .marginalia-textarea {
 		width: 100%;
 		min-height: 24px;
 		padding: var(--space-1) var(--space-2);
