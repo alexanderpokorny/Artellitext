@@ -33,7 +33,7 @@
 			onSelect={i18n.setLanguage}
 			compact
 		/>
-		<ThemeToggle onToggle={themeStore.toggle} />
+		<ThemeToggle onToggle={themeStore.toggleTheme} />
 	</div>
 	
 	<!-- Left: Illustration (2/3) -->

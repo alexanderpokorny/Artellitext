@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict JdPyUIv9QUS2phkwZR5CGgCZdnXEEOZTlSec2HnQhRAm3TBp9P7gJKiNnpA2PG8
+\restrict VZTu1MSo9pjIjD4m3H8oXqP5ia6e5A1IhEdaRHpNVZ5iUVNSaOaVkkTrHDAlrgR
 
 -- Dumped from database version 17.7 (Debian 17.7-3.pgdg12+1)
 -- Dumped by pg_dump version 17.7 (Debian 17.7-3.pgdg12+1)
@@ -144,11 +144,11 @@ CREATE TYPE public.user_role AS ENUM (
 CREATE FUNCTION public.update_updated_at_column() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$;
+			BEGIN
+				NEW.updated_at = NOW();
+				RETURN NEW;
+			END;
+			$$;
 
 
 SET default_tablespace = '';
@@ -352,8 +352,8 @@ COPY public.sessions (id, user_id, token, ip_address, user_agent, expires_at, cr
 --
 
 COPY public.users (id, email, username, password_hash, display_name, avatar_url, role, subscription_tier, subscription_expires_at, language, theme, email_verified, settings, created_at, updated_at) FROM stdin;
-00000000-0000-0000-0000-000000000001	demo@artellitext.app	demo	$2a$10$rQEY8t9xqO5VXOvCYxYtZuYHYHdQlZGz5P4pL1zV5OqW5UQnF3K.m	Demo User	\N	user	pro	\N	de	auto	t	{"editor_mode": "rich", "onboarding_completed": true}	2026-01-28 14:07:11.210302+00	2026-01-28 14:07:11.210302+00
-00000000-0000-0000-0000-000000000002	admin@artellitext.app	admin	$2a$10$HQvGBQJh1xJz5MwZl3pYseD5X8gVHb1bLwQd1OE5sKiZ8OqW5UQnF3	Administrator	\N	admin	lifetime	\N	de	auto	t	{"onboarding_completed": true}	2026-01-28 14:07:11.213194+00	2026-01-28 14:07:11.213194+00
+00000000-0000-0000-0000-000000000001	demo@artellitext.app	demo	bf6f4463f0a10233d541fb3e9eb011ab:f946034cede66c436fe1b29f5f0f1cda1f7d8fe90c9223fbfb26846de57a5a7c908a35afad2b5619eae943513c8db12fd2235172905be7738171f2bee3203c50	Demo User	\N	user	pro	\N	de	auto	t	{"editor_mode": "rich", "onboarding_completed": true}	2026-01-28 14:07:11.210302+00	2026-01-28 14:36:12.774969+00
+00000000-0000-0000-0000-000000000002	admin@artellitext.app	admin	dee1e6053f56e32fc1cc1fb31aa4b69f:54f504856a3abcae95134fe186eb47ef6b055bfe48d10bf63f1040f90152909d50599f5d2174deb07ed3f59b360ced807b6b51254073fd77541a21ae51aabf79	Administrator	\N	admin	lifetime	\N	de	auto	t	{"onboarding_completed": true}	2026-01-28 14:07:11.213194+00	2026-01-28 14:36:17.40651+00
 \.
 
 
@@ -648,5 +648,5 @@ ALTER TABLE ONLY public.sessions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict JdPyUIv9QUS2phkwZR5CGgCZdnXEEOZTlSec2HnQhRAm3TBp9P7gJKiNnpA2PG8
+\unrestrict VZTu1MSo9pjIjD4m3H8oXqP5ia6e5A1IhEdaRHpNVZ5iUVNSaOaVkkTrHDAlrgR
 

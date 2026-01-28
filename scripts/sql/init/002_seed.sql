@@ -24,8 +24,8 @@ INSERT INTO users (
     '00000000-0000-0000-0000-000000000001',
     'demo@artellitext.app',
     'demo',
-    -- bcrypt hash for 'demo123'
-    '$2a$10$rQEY8t9xqO5VXOvCYxYtZuYHYHdQlZGz5P4pL1zV5OqW5UQnF3K.m',
+    -- scrypt hash for 'demo123' (salt:hash format)
+    'bf6f4463f0a10233d541fb3e9eb011ab:f946034cede66c436fe1b29f5f0f1cda1f7d8fe90c9223fbfb26846de57a5a7c908a35afad2b5619eae943513c8db12fd2235172905be7738171f2bee3203c50',
     'Demo User',
     'user',
     'pro',
@@ -50,8 +50,8 @@ INSERT INTO users (
     '00000000-0000-0000-0000-000000000002',
     'admin@artellitext.app',
     'admin',
-    -- bcrypt hash for 'admin123'
-    '$2a$10$HQvGBQJh1xJz5MwZl3pYseD5X8gVHb1bLwQd1OE5sKiZ8OqW5UQnF3',
+    -- scrypt hash for 'admin123' (salt:hash format)
+    'dee1e6053f56e32fc1cc1fb31aa4b69f:54f504856a3abcae95134fe186eb47ef6b055bfe48d10bf63f1040f90152909d50599f5d2174deb07ed3f59b360ced807b6b51254073fd77541a21ae51aabf79',
     'Administrator',
     'admin',
     'lifetime',
