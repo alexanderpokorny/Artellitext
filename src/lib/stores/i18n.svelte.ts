@@ -178,6 +178,19 @@ export const translations = {
 		'sidebar.spellcheck': 'Rechtschreibung & Grammatik',
 		'sidebar.stats': 'Textstatistik',
 		'sidebar.tags': 'Tags',
+		'sidebar.references': 'Referenzen',
+		
+		// References
+		'references.import': 'Referenzen importieren',
+		'references.export': 'Referenzen exportieren',
+		'references.format': 'Format',
+		'references.selectFile': 'Datei auswählen',
+		'references.found': 'Einträge gefunden',
+		'references.more': 'weitere',
+		'references.importSelected': 'Importieren',
+		'references.exportNow': 'Exportieren',
+		'references.exportInfo': 'Exportiert alle Referenzen aus Ihrer Bibliothek.',
+		'references.empty': 'Noch keine Referenzen in diesem Dokument.',
 		
 		// Text Statistics
 		'stats.counts': 'Zählungen',
@@ -366,6 +379,19 @@ export const translations = {
 		'sidebar.spellcheck': 'Spelling & Grammar',
 		'sidebar.stats': 'Text Statistics',
 		'sidebar.tags': 'Tags',
+		'sidebar.references': 'References',
+		
+		// References
+		'references.import': 'Import References',
+		'references.export': 'Export References',
+		'references.format': 'Format',
+		'references.selectFile': 'Select file',
+		'references.found': 'entries found',
+		'references.more': 'more',
+		'references.importSelected': 'Import',
+		'references.exportNow': 'Export',
+		'references.exportInfo': 'Exports all references from your library.',
+		'references.empty': 'No references in this document yet.',
 		
 		// Text Statistics
 		'stats.counts': 'Counts',
@@ -554,6 +580,19 @@ export const translations = {
 		'sidebar.spellcheck': 'Orthographe & Grammaire',
 		'sidebar.stats': 'Statistiques',
 		'sidebar.tags': 'Tags',
+		'sidebar.references': 'Références',
+		
+		// References
+		'references.import': 'Importer des références',
+		'references.export': 'Exporter des références',
+		'references.format': 'Format',
+		'references.selectFile': 'Sélectionner un fichier',
+		'references.found': 'entrées trouvées',
+		'references.more': 'de plus',
+		'references.importSelected': 'Importer',
+		'references.exportNow': 'Exporter',
+		'references.exportInfo': 'Exporte toutes les références de votre bibliothèque.',
+		'references.empty': 'Pas encore de références dans ce document.',
 		
 		// Text Statistics
 		'stats.counts': 'Comptages',
@@ -742,6 +781,19 @@ export const translations = {
 		'sidebar.spellcheck': 'Ortografía y Gramática',
 		'sidebar.stats': 'Estadísticas',
 		'sidebar.tags': 'Etiquetas',
+		'sidebar.references': 'Referencias',
+		
+		// References
+		'references.import': 'Importar referencias',
+		'references.export': 'Exportar referencias',
+		'references.format': 'Formato',
+		'references.selectFile': 'Seleccionar archivo',
+		'references.found': 'entradas encontradas',
+		'references.more': 'más',
+		'references.importSelected': 'Importar',
+		'references.exportNow': 'Exportar',
+		'references.exportInfo': 'Exporta todas las referencias de tu biblioteca.',
+		'references.empty': 'Aún no hay referencias en este documento.',
 		
 		// Text Statistics
 		'stats.counts': 'Recuentos',
@@ -930,6 +982,19 @@ export const translations = {
 		'sidebar.spellcheck': 'Ortografia e Grammatica',
 		'sidebar.stats': 'Statistiche',
 		'sidebar.tags': 'Tag',
+		'sidebar.references': 'Riferimenti',
+		
+		// References
+		'references.import': 'Importa riferimenti',
+		'references.export': 'Esporta riferimenti',
+		'references.format': 'Formato',
+		'references.selectFile': 'Seleziona file',
+		'references.found': 'voci trovate',
+		'references.more': 'altre',
+		'references.importSelected': 'Importa',
+		'references.exportNow': 'Esporta',
+		'references.exportInfo': 'Esporta tutti i riferimenti dalla tua biblioteca.',
+		'references.empty': 'Ancora nessun riferimento in questo documento.',
 		
 		// Text Statistics
 		'stats.counts': 'Conteggi',

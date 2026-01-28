@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict lPgQAdE4tsHlRThVVyvHB8NfOA5LqVyzssSL6a9kkTN91sI5edP450GXzDxTpdE
+\restrict TajG4RGksAzdyGSJwpJVCXgCuqZmrhQDWfRoKDm45qgPZQXlRJTXbClaVwLPGMu
 
 -- Dumped from database version 17.7 (Debian 17.7-3.pgdg12+1)
 -- Dumped by pg_dump version 17.7 (Debian 17.7-3.pgdg12+1)
@@ -20,29 +20,54 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 ALTER TABLE IF EXISTS ONLY public.sessions DROP CONSTRAINT IF EXISTS sessions_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.projects DROP CONSTRAINT IF EXISTS projects_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.project_notes DROP CONSTRAINT IF EXISTS project_notes_project_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.project_notes DROP CONSTRAINT IF EXISTS project_notes_note_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.project_literature DROP CONSTRAINT IF EXISTS project_literature_project_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.project_literature DROP CONSTRAINT IF EXISTS project_literature_literature_id_fkey;
 ALTER TABLE IF EXISTS ONLY public.notes DROP CONSTRAINT IF EXISTS notes_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.note_citations DROP CONSTRAINT IF EXISTS note_citations_note_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.note_citations DROP CONSTRAINT IF EXISTS note_citations_literature_id_fkey;
 ALTER TABLE IF EXISTS ONLY public.literature DROP CONSTRAINT IF EXISTS literature_user_id_fkey;
 ALTER TABLE IF EXISTS ONLY public.literature DROP CONSTRAINT IF EXISTS literature_document_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.knowledge_bases DROP CONSTRAINT IF EXISTS knowledge_bases_user_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.knowledge_base_literature DROP CONSTRAINT IF EXISTS knowledge_base_literature_literature_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.knowledge_base_literature DROP CONSTRAINT IF EXISTS knowledge_base_literature_knowledge_base_id_fkey;
 ALTER TABLE IF EXISTS ONLY public.documents DROP CONSTRAINT IF EXISTS documents_user_id_fkey;
 DROP TRIGGER IF EXISTS update_users_updated_at ON public.users;
+DROP TRIGGER IF EXISTS update_projects_updated_at ON public.projects;
 DROP TRIGGER IF EXISTS update_notes_updated_at ON public.notes;
 DROP TRIGGER IF EXISTS update_literature_updated_at ON public.literature;
+DROP TRIGGER IF EXISTS update_knowledge_bases_updated_at ON public.knowledge_bases;
 DROP TRIGGER IF EXISTS update_documents_updated_at ON public.documents;
+DROP TRIGGER IF EXISTS ensure_single_default_kb ON public.knowledge_bases;
 DROP INDEX IF EXISTS public.idx_users_subscription;
 DROP INDEX IF EXISTS public.idx_users_email;
 DROP INDEX IF EXISTS public.idx_sessions_user_id;
 DROP INDEX IF EXISTS public.idx_sessions_token;
 DROP INDEX IF EXISTS public.idx_sessions_expires;
+DROP INDEX IF EXISTS public.idx_projects_user_id;
+DROP INDEX IF EXISTS public.idx_project_notes_project;
+DROP INDEX IF EXISTS public.idx_project_notes_note;
+DROP INDEX IF EXISTS public.idx_project_literature_project;
+DROP INDEX IF EXISTS public.idx_project_literature_lit;
 DROP INDEX IF EXISTS public.idx_notes_user_id;
 DROP INDEX IF EXISTS public.idx_notes_updated;
 DROP INDEX IF EXISTS public.idx_notes_tags;
 DROP INDEX IF EXISTS public.idx_notes_status;
 DROP INDEX IF EXISTS public.idx_notes_embedding;
 DROP INDEX IF EXISTS public.idx_notes_created;
+DROP INDEX IF EXISTS public.idx_note_citations_note;
+DROP INDEX IF EXISTS public.idx_note_citations_literature;
 DROP INDEX IF EXISTS public.idx_literature_user_id;
 DROP INDEX IF EXISTS public.idx_literature_tags;
+DROP INDEX IF EXISTS public.idx_literature_has_fulltext;
 DROP INDEX IF EXISTS public.idx_literature_doi;
 DROP INDEX IF EXISTS public.idx_literature_document;
+DROP INDEX IF EXISTS public.idx_literature_citation_key;
+DROP INDEX IF EXISTS public.idx_knowledge_bases_user;
+DROP INDEX IF EXISTS public.idx_kb_literature_lit;
+DROP INDEX IF EXISTS public.idx_kb_literature_kb;
 DROP INDEX IF EXISTS public.idx_documents_user_id;
 DROP INDEX IF EXISTS public.idx_documents_status;
 DROP INDEX IF EXISTS public.idx_documents_mime;
@@ -52,20 +77,34 @@ ALTER TABLE IF EXISTS ONLY public.users DROP CONSTRAINT IF EXISTS users_pkey;
 ALTER TABLE IF EXISTS ONLY public.users DROP CONSTRAINT IF EXISTS users_email_key;
 ALTER TABLE IF EXISTS ONLY public.sessions DROP CONSTRAINT IF EXISTS sessions_token_key;
 ALTER TABLE IF EXISTS ONLY public.sessions DROP CONSTRAINT IF EXISTS sessions_pkey;
+ALTER TABLE IF EXISTS ONLY public.projects DROP CONSTRAINT IF EXISTS projects_pkey;
+ALTER TABLE IF EXISTS ONLY public.project_notes DROP CONSTRAINT IF EXISTS project_notes_pkey;
+ALTER TABLE IF EXISTS ONLY public.project_literature DROP CONSTRAINT IF EXISTS project_literature_pkey;
 ALTER TABLE IF EXISTS ONLY public.notes DROP CONSTRAINT IF EXISTS notes_pkey;
+ALTER TABLE IF EXISTS ONLY public.note_citations DROP CONSTRAINT IF EXISTS note_citations_pkey;
+ALTER TABLE IF EXISTS ONLY public.note_citations DROP CONSTRAINT IF EXISTS note_citations_note_id_literature_id_key;
 ALTER TABLE IF EXISTS ONLY public.literature DROP CONSTRAINT IF EXISTS literature_pkey;
+ALTER TABLE IF EXISTS ONLY public.knowledge_bases DROP CONSTRAINT IF EXISTS knowledge_bases_pkey;
+ALTER TABLE IF EXISTS ONLY public.knowledge_base_literature DROP CONSTRAINT IF EXISTS knowledge_base_literature_pkey;
 ALTER TABLE IF EXISTS ONLY public.documents DROP CONSTRAINT IF EXISTS documents_pkey;
 ALTER TABLE IF EXISTS ONLY public._migrations DROP CONSTRAINT IF EXISTS _migrations_pkey;
 ALTER TABLE IF EXISTS ONLY public._migrations DROP CONSTRAINT IF EXISTS _migrations_name_key;
 ALTER TABLE IF EXISTS public._migrations ALTER COLUMN id DROP DEFAULT;
 DROP TABLE IF EXISTS public.users;
 DROP TABLE IF EXISTS public.sessions;
+DROP TABLE IF EXISTS public.projects;
+DROP TABLE IF EXISTS public.project_notes;
+DROP TABLE IF EXISTS public.project_literature;
 DROP TABLE IF EXISTS public.notes;
+DROP TABLE IF EXISTS public.note_citations;
 DROP TABLE IF EXISTS public.literature;
+DROP TABLE IF EXISTS public.knowledge_bases;
+DROP TABLE IF EXISTS public.knowledge_base_literature;
 DROP TABLE IF EXISTS public.documents;
 DROP SEQUENCE IF EXISTS public._migrations_id_seq;
 DROP TABLE IF EXISTS public._migrations;
 DROP FUNCTION IF EXISTS public.update_updated_at_column();
+DROP FUNCTION IF EXISTS public.ensure_default_knowledge_base();
 DROP TYPE IF EXISTS public.user_role;
 DROP TYPE IF EXISTS public.subscription_tier;
 DROP EXTENSION IF EXISTS vector;
@@ -135,6 +174,25 @@ CREATE TYPE public.user_role AS ENUM (
     'admin',
     'moderator'
 );
+
+
+--
+-- Name: ensure_default_knowledge_base(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.ensure_default_knowledge_base() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    -- If setting this as default, unset others
+    IF NEW.is_default = TRUE THEN
+        UPDATE knowledge_bases 
+        SET is_default = FALSE 
+        WHERE user_id = NEW.user_id AND id != NEW.id;
+    END IF;
+    RETURN NEW;
+END;
+$$;
 
 
 --
@@ -211,6 +269,34 @@ CREATE TABLE public.documents (
 
 
 --
+-- Name: knowledge_base_literature; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.knowledge_base_literature (
+    knowledge_base_id uuid NOT NULL,
+    literature_id uuid NOT NULL,
+    added_at timestamp with time zone DEFAULT now(),
+    notes text
+);
+
+
+--
+-- Name: knowledge_bases; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.knowledge_bases (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    name character varying(255) NOT NULL,
+    description text,
+    is_default boolean DEFAULT false,
+    settings jsonb DEFAULT '{}'::jsonb,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+--
 -- Name: literature; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -228,7 +314,25 @@ CREATE TABLE public.literature (
     tags text[] DEFAULT '{}'::text[],
     notes text,
     created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
+    updated_at timestamp with time zone DEFAULT now(),
+    has_fulltext boolean DEFAULT false,
+    abstract text,
+    citation_key character varying(100),
+    source character varying(50) DEFAULT 'manual'::character varying
+);
+
+
+--
+-- Name: note_citations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.note_citations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    note_id uuid NOT NULL,
+    literature_id uuid NOT NULL,
+    "position" integer,
+    context text,
+    created_at timestamp with time zone DEFAULT now()
 );
 
 
@@ -254,6 +358,45 @@ CREATE TABLE public.notes (
     updated_at timestamp with time zone DEFAULT now(),
     CONSTRAINT notes_language_check CHECK (((language)::text = ANY ((ARRAY['de'::character varying, 'en'::character varying, 'fr'::character varying, 'es'::character varying, 'it'::character varying, 'mu'::character varying])::text[]))),
     CONSTRAINT notes_status_check CHECK (((status)::text = ANY ((ARRAY['draft'::character varying, 'published'::character varying, 'archived'::character varying])::text[])))
+);
+
+
+--
+-- Name: project_literature; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.project_literature (
+    project_id uuid NOT NULL,
+    literature_id uuid NOT NULL,
+    added_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: project_notes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.project_notes (
+    project_id uuid NOT NULL,
+    note_id uuid NOT NULL,
+    added_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: projects; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.projects (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    name character varying(255) NOT NULL,
+    description text,
+    color character varying(7),
+    icon character varying(50),
+    settings jsonb DEFAULT '{}'::jsonb,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
 );
 
 
@@ -310,6 +453,7 @@ ALTER TABLE ONLY public._migrations ALTER COLUMN id SET DEFAULT nextval('public.
 COPY public._migrations (id, name, applied_at) FROM stdin;
 1	001_schema	2026-01-28 14:07:11.184448+00
 2	002_seed	2026-01-28 14:07:11.218331+00
+3	004_literature_knowledge_bases	2026-01-28 19:11:38.690275+00
 \.
 
 
@@ -322,10 +466,34 @@ COPY public.documents (id, user_id, title, filename, mime_type, size, storage_pa
 
 
 --
+-- Data for Name: knowledge_base_literature; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.knowledge_base_literature (knowledge_base_id, literature_id, added_at, notes) FROM stdin;
+\.
+
+
+--
+-- Data for Name: knowledge_bases; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.knowledge_bases (id, user_id, name, description, is_default, settings, created_at, updated_at) FROM stdin;
+\.
+
+
+--
 -- Data for Name: literature; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.literature (id, user_id, document_id, csl_json, bibtex, title, authors, year, doi, url, tags, notes, created_at, updated_at) FROM stdin;
+COPY public.literature (id, user_id, document_id, csl_json, bibtex, title, authors, year, doi, url, tags, notes, created_at, updated_at, has_fulltext, abstract, citation_key, source) FROM stdin;
+\.
+
+
+--
+-- Data for Name: note_citations; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.note_citations (id, note_id, literature_id, "position", context, created_at) FROM stdin;
 \.
 
 
@@ -342,7 +510,31 @@ fb6f4e7c-bb21-4c8d-9d7a-83c5205aef1e	660abf11-d556-4c6f-8c22-d2e79a1f054a	Unbena
 279234a2-5310-4f87-a324-75b3830e0858	660abf11-d556-4c6f-8c22-d2e79a1f054a	Unbenannt	{"time": 1769615101622, "blocks": [{"id": "Lm4m-Mc5Dx", "data": {"text": "Hallo", "level": 2}, "type": "header"}, {"id": "gATRMMf8Uw", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "qbmWLIsTkY", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "SUBrDaD0aK", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "-LiHO0ZI3q", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}, {"id": "rJJICo812r", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "1IE0gAH81v", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "VpVzSJe68r", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "K_RXkmtxxn", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}], "version": "2.31.1"}	\N	draft	{Test,Business,KI}	de	595	3	\N	\N	\N	2026-01-28 15:45:01.658408+00	2026-01-28 15:45:01.658408+00
 531fd569-f766-4352-a406-ebf0306d45da	660abf11-d556-4c6f-8c22-d2e79a1f054a	Neuer Text Alexander	{"time": 1769615111573, "blocks": [{"id": "Lm4m-Mc5Dx", "data": {"text": "Hallo", "level": 2}, "type": "header"}, {"id": "gATRMMf8Uw", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "qbmWLIsTkY", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "SUBrDaD0aK", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "-LiHO0ZI3q", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}, {"id": "rJJICo812r", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "1IE0gAH81v", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "VpVzSJe68r", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "K_RXkmtxxn", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}], "version": "2.31.1"}	\N	draft	{Test,Business,KI}	de	595	3	\N	\N	\N	2026-01-28 15:45:11.583381+00	2026-01-28 15:45:11.583381+00
 9c615a19-61a7-47bd-af7b-677b27cc653a	660abf11-d556-4c6f-8c22-d2e79a1f054a	Unbenannt	{"time": 1769624020038, "blocks": [{"id": "9XUoh2txLP", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "u4Sdnc0mpj", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "oAd2uRcfqi", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "-95KAUQJ7j", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}, {"id": "KMFONE2Jrh", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "c_Y1ZhZJ3o", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "AGfCcmDV9Y", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "WCDIso0h-P", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}, {"id": "V8f1ny6SII", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "I678Ihs5mS", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "fJPwvycduX", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "7XF0I1zVkQ", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}, {"id": "mBGcOKKRWl", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "fOg1unK_Ym", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "o8L2sZcyV1", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "-_e1vkUObs", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}, {"id": "pkGcjZa3vm", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "3-yZBSvi70", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "oyAjSTDcuy", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "9ySaFqaG58", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}, {"id": "648Jx4yiQC", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "VV5Gr1lAgw", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "7iP8oqIGae", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "3D9HpDYyCY", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}], "version": "2.31.1"}	\N	draft	{}	de	1782	9	\N	\N	\N	2026-01-28 18:13:40.102684+00	2026-01-28 18:13:40.102684+00
-b1055375-3c2f-4251-a6ba-7b2a5b59294b	660abf11-d556-4c6f-8c22-d2e79a1f054a	Neuer Text, ein echter Test	{"time": 1769624031260, "blocks": [{"id": "9XUoh2txLP", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "u4Sdnc0mpj", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "oAd2uRcfqi", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "-95KAUQJ7j", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}, {"id": "KMFONE2Jrh", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "c_Y1ZhZJ3o", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "AGfCcmDV9Y", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "WCDIso0h-P", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}, {"id": "V8f1ny6SII", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "I678Ihs5mS", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "fJPwvycduX", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "7XF0I1zVkQ", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}, {"id": "mBGcOKKRWl", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "fOg1unK_Ym", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "o8L2sZcyV1", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "-_e1vkUObs", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}, {"id": "pkGcjZa3vm", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "3-yZBSvi70", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "oyAjSTDcuy", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "9ySaFqaG58", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}, {"id": "648Jx4yiQC", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "VV5Gr1lAgw", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "7iP8oqIGae", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "3D9HpDYyCY", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}], "version": "2.31.1"}	\N	draft	{}	de	1782	9	\N	\N	\N	2026-01-28 18:13:51.273818+00	2026-01-28 18:13:51.273818+00
+b1055375-3c2f-4251-a6ba-7b2a5b59294b	660abf11-d556-4c6f-8c22-d2e79a1f054a	Neuer Text, ein echter Test	{"time": 1769627157924, "blocks": [{"id": "9XUoh2txLP", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "u4Sdnc0mpj", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "oAd2uRcfqi", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "-95KAUQJ7j", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}, {"id": "KMFONE2Jrh", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "c_Y1ZhZJ3o", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "AGfCcmDV9Y", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "WCDIso0h-P", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}, {"id": "V8f1ny6SII", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "I678Ihs5mS", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "fJPwvycduX", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "7XF0I1zVkQ", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}, {"id": "mBGcOKKRWl", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "fOg1unK_Ym", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "o8L2sZcyV1", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "-_e1vkUObs", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}, {"id": "pkGcjZa3vm", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "3-yZBSvi70", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "oyAjSTDcuy", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "9ySaFqaG58", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}, {"id": "648Jx4yiQC", "data": {"text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  "}, "type": "paragraph"}, {"id": "VV5Gr1lAgw", "data": {"text": "Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  "}, "type": "paragraph"}, {"id": "7iP8oqIGae", "data": {"text": "Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  "}, "type": "paragraph"}, {"id": "3D9HpDYyCY", "data": {"text": "Nam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem"}, "type": "paragraph"}], "version": "2.31.1"}	\N	draft	{}	de	1782	9	\N	\N	\N	2026-01-28 18:13:51.273818+00	2026-01-28 19:05:57.952115+00
+\.
+
+
+--
+-- Data for Name: project_literature; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.project_literature (project_id, literature_id, added_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: project_notes; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.project_notes (project_id, note_id, added_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: projects; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.projects (id, user_id, name, description, color, icon, settings, created_at, updated_at) FROM stdin;
 \.
 
 
@@ -370,7 +562,7 @@ COPY public.users (id, email, username, password_hash, display_name, avatar_url,
 -- Name: _migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public._migrations_id_seq', 2, true);
+SELECT pg_catalog.setval('public._migrations_id_seq', 3, true);
 
 
 --
@@ -398,6 +590,22 @@ ALTER TABLE ONLY public.documents
 
 
 --
+-- Name: knowledge_base_literature knowledge_base_literature_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.knowledge_base_literature
+    ADD CONSTRAINT knowledge_base_literature_pkey PRIMARY KEY (knowledge_base_id, literature_id);
+
+
+--
+-- Name: knowledge_bases knowledge_bases_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.knowledge_bases
+    ADD CONSTRAINT knowledge_bases_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: literature literature_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -406,11 +614,51 @@ ALTER TABLE ONLY public.literature
 
 
 --
+-- Name: note_citations note_citations_note_id_literature_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.note_citations
+    ADD CONSTRAINT note_citations_note_id_literature_id_key UNIQUE (note_id, literature_id);
+
+
+--
+-- Name: note_citations note_citations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.note_citations
+    ADD CONSTRAINT note_citations_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: notes notes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.notes
     ADD CONSTRAINT notes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: project_literature project_literature_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.project_literature
+    ADD CONSTRAINT project_literature_pkey PRIMARY KEY (project_id, literature_id);
+
+
+--
+-- Name: project_notes project_notes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.project_notes
+    ADD CONSTRAINT project_notes_pkey PRIMARY KEY (project_id, note_id);
+
+
+--
+-- Name: projects projects_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
 
 
 --
@@ -481,6 +729,34 @@ CREATE INDEX idx_documents_user_id ON public.documents USING btree (user_id);
 
 
 --
+-- Name: idx_kb_literature_kb; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_kb_literature_kb ON public.knowledge_base_literature USING btree (knowledge_base_id);
+
+
+--
+-- Name: idx_kb_literature_lit; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_kb_literature_lit ON public.knowledge_base_literature USING btree (literature_id);
+
+
+--
+-- Name: idx_knowledge_bases_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_knowledge_bases_user ON public.knowledge_bases USING btree (user_id);
+
+
+--
+-- Name: idx_literature_citation_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_literature_citation_key ON public.literature USING btree (citation_key);
+
+
+--
 -- Name: idx_literature_document; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -495,6 +771,13 @@ CREATE INDEX idx_literature_doi ON public.literature USING btree (doi);
 
 
 --
+-- Name: idx_literature_has_fulltext; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_literature_has_fulltext ON public.literature USING btree (has_fulltext);
+
+
+--
 -- Name: idx_literature_tags; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -506,6 +789,20 @@ CREATE INDEX idx_literature_tags ON public.literature USING gin (tags);
 --
 
 CREATE INDEX idx_literature_user_id ON public.literature USING btree (user_id);
+
+
+--
+-- Name: idx_note_citations_literature; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_note_citations_literature ON public.note_citations USING btree (literature_id);
+
+
+--
+-- Name: idx_note_citations_note; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_note_citations_note ON public.note_citations USING btree (note_id);
 
 
 --
@@ -551,6 +848,41 @@ CREATE INDEX idx_notes_user_id ON public.notes USING btree (user_id);
 
 
 --
+-- Name: idx_project_literature_lit; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_project_literature_lit ON public.project_literature USING btree (literature_id);
+
+
+--
+-- Name: idx_project_literature_project; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_project_literature_project ON public.project_literature USING btree (project_id);
+
+
+--
+-- Name: idx_project_notes_note; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_project_notes_note ON public.project_notes USING btree (note_id);
+
+
+--
+-- Name: idx_project_notes_project; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_project_notes_project ON public.project_notes USING btree (project_id);
+
+
+--
+-- Name: idx_projects_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_projects_user_id ON public.projects USING btree (user_id);
+
+
+--
 -- Name: idx_sessions_expires; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -586,10 +918,24 @@ CREATE INDEX idx_users_subscription ON public.users USING btree (subscription_ti
 
 
 --
+-- Name: knowledge_bases ensure_single_default_kb; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER ensure_single_default_kb BEFORE INSERT OR UPDATE ON public.knowledge_bases FOR EACH ROW WHEN ((new.is_default = true)) EXECUTE FUNCTION public.ensure_default_knowledge_base();
+
+
+--
 -- Name: documents update_documents_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER update_documents_updated_at BEFORE UPDATE ON public.documents FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: knowledge_bases update_knowledge_bases_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_knowledge_bases_updated_at BEFORE UPDATE ON public.knowledge_bases FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 
 --
@@ -607,6 +953,13 @@ CREATE TRIGGER update_notes_updated_at BEFORE UPDATE ON public.notes FOR EACH RO
 
 
 --
+-- Name: projects update_projects_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
 -- Name: users update_users_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -619,6 +972,30 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users FOR EACH RO
 
 ALTER TABLE ONLY public.documents
     ADD CONSTRAINT documents_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: knowledge_base_literature knowledge_base_literature_knowledge_base_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.knowledge_base_literature
+    ADD CONSTRAINT knowledge_base_literature_knowledge_base_id_fkey FOREIGN KEY (knowledge_base_id) REFERENCES public.knowledge_bases(id) ON DELETE CASCADE;
+
+
+--
+-- Name: knowledge_base_literature knowledge_base_literature_literature_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.knowledge_base_literature
+    ADD CONSTRAINT knowledge_base_literature_literature_id_fkey FOREIGN KEY (literature_id) REFERENCES public.literature(id) ON DELETE CASCADE;
+
+
+--
+-- Name: knowledge_bases knowledge_bases_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.knowledge_bases
+    ADD CONSTRAINT knowledge_bases_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -638,11 +1015,67 @@ ALTER TABLE ONLY public.literature
 
 
 --
+-- Name: note_citations note_citations_literature_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.note_citations
+    ADD CONSTRAINT note_citations_literature_id_fkey FOREIGN KEY (literature_id) REFERENCES public.literature(id) ON DELETE CASCADE;
+
+
+--
+-- Name: note_citations note_citations_note_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.note_citations
+    ADD CONSTRAINT note_citations_note_id_fkey FOREIGN KEY (note_id) REFERENCES public.notes(id) ON DELETE CASCADE;
+
+
+--
 -- Name: notes notes_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.notes
     ADD CONSTRAINT notes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: project_literature project_literature_literature_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.project_literature
+    ADD CONSTRAINT project_literature_literature_id_fkey FOREIGN KEY (literature_id) REFERENCES public.literature(id) ON DELETE CASCADE;
+
+
+--
+-- Name: project_literature project_literature_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.project_literature
+    ADD CONSTRAINT project_literature_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
+-- Name: project_notes project_notes_note_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.project_notes
+    ADD CONSTRAINT project_notes_note_id_fkey FOREIGN KEY (note_id) REFERENCES public.notes(id) ON DELETE CASCADE;
+
+
+--
+-- Name: project_notes project_notes_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.project_notes
+    ADD CONSTRAINT project_notes_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
+-- Name: projects projects_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -657,5 +1090,5 @@ ALTER TABLE ONLY public.sessions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict lPgQAdE4tsHlRThVVyvHB8NfOA5LqVyzssSL6a9kkTN91sI5edP450GXzDxTpdE
+\unrestrict TajG4RGksAzdyGSJwpJVCXgCuqZmrhQDWfRoKDm45qgPZQXlRJTXbClaVwLPGMu
 

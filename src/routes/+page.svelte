@@ -76,7 +76,7 @@
 	let expandedTextStats = $state<TextStats>(getEmptyStats());
 	let expandedSaveStatus = $state<'saved' | 'saving' | 'unsaved'>('saved');
 	let expandedLeftTab = $state<'marginalia' | 'spellcheck'>('marginalia');
-	let expandedRightTab = $state<'stats' | 'tags'>('stats');
+	let expandedRightTab = $state<'stats' | 'tags' | 'references'>('stats');
 	
 	// Tab configurations for expanded editor
 	const expandedLeftTabs = [
@@ -87,6 +87,7 @@
 	const expandedRightTabs = [
 		{ id: 'stats', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>', tooltipKey: 'sidebar.stats' },
 		{ id: 'tags', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>', tooltipKey: 'sidebar.tags' },
+		{ id: 'references', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>', tooltipKey: 'sidebar.references' },
 	];
 	
 	// Sorted notes
@@ -214,19 +215,25 @@
 			const Header = (await import('@editorjs/header')).default;
 			const List = (await import('@editorjs/list')).default;
 			const Quote = (await import('@editorjs/quote')).default;
+			const Code = (await import('@editorjs/code')).default;
 			// @ts-expect-error No type declarations available
 			const DragDrop = (await import('editorjs-drag-drop')).default;
+			
+			const { MathTool, MathInlineTool, MermaidTool, CitationTool, BibliographyTool } = await import('$lib/editor/tools');
+			await import('katex/dist/katex.min.css');
 			
 			expandedEditor = new EditorJS({
 				holder: expandedEditorContainer,
 				data: note.content || { blocks: [] },
 				placeholder: i18n.t('editor.placeholder'),
+				autofocus: true,
 				minHeight: 200,
+				inlineToolbar: ['bold', 'italic', 'link', 'mathInline'],
 				tools: {
 					header: {
 						// @ts-expect-error Editor.js types
 						class: Header,
-						config: { levels: [2, 3, 4], defaultLevel: 2 },
+						config: { levels: [1, 2, 3, 4], defaultLevel: 2 },
 					},
 					list: {
 						// @ts-expect-error Editor.js types
@@ -234,6 +241,30 @@
 						inlineToolbar: true,
 					},
 					quote: { class: Quote, inlineToolbar: true },
+					code: Code,
+					math: {
+						// @ts-expect-error Custom tool
+						class: MathTool,
+						config: { placeholder: 'LaTeX (z.B. E = mc^2)' },
+					},
+					mathInline: {
+						class: MathInlineTool,
+					},
+					mermaid: {
+						// @ts-expect-error Custom tool
+						class: MermaidTool,
+						config: { placeholder: 'Mermaid diagram' },
+					},
+					citation: {
+						// @ts-expect-error Custom tool
+						class: CitationTool,
+						config: { defaultStyle: 'apa' },
+					},
+					bibliography: {
+						// @ts-expect-error Custom tool
+						class: BibliographyTool,
+						config: { defaultStyle: 'apa', defaultTitle: 'References' },
+					},
 				},
 				onChange: async () => {
 					expandedSaveStatus = 'unsaved';
@@ -313,6 +344,110 @@
 	function removeExpandedTag(tag: string) {
 		expandedNoteTags = expandedNoteTags.filter(t => t !== tag);
 		expandedSaveStatus = 'unsaved';
+	}
+	
+	// Reference Import/Export Dialog State
+	let showReferenceDialog = $state(false);
+	let referenceDialogMode = $state<'import' | 'export'>('import');
+	let referenceFormat = $state<'bibtex' | 'csv' | 'excel'>('bibtex');
+	let referenceFileInput: HTMLInputElement;
+	let importedReferences = $state<any[]>([]);
+	
+	// Open reference import dialog
+	function openReferenceImport() {
+		referenceDialogMode = 'import';
+		showReferenceDialog = true;
+	}
+	
+	// Open reference export dialog
+	function openReferenceExport() {
+		referenceDialogMode = 'export';
+		showReferenceDialog = true;
+	}
+	
+	// Close reference dialog
+	function closeReferenceDialog() {
+		showReferenceDialog = false;
+		importedReferences = [];
+	}
+	
+	// Handle file selection for import
+	async function handleReferenceFileSelect(event: Event) {
+		const input = event.target as HTMLInputElement;
+		if (!input.files?.length) return;
+		
+		const file = input.files[0];
+		const text = await file.text();
+		
+		try {
+			if (referenceFormat === 'bibtex') {
+				const { parseBibtex } = await import('$lib/services/referenceParser');
+				importedReferences = parseBibtex(text);
+			} else if (referenceFormat === 'csv') {
+				const { parseCsv } = await import('$lib/services/referenceParser');
+				importedReferences = parseCsv(text);
+			}
+		} catch (err) {
+			console.error('Failed to parse references:', err);
+		}
+	}
+	
+	// Save imported references to database
+	async function saveImportedReferences() {
+		for (const ref of importedReferences) {
+			try {
+				await fetch('/api/literature', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(ref),
+				});
+			} catch (err) {
+				console.error('Failed to save reference:', err);
+			}
+		}
+		closeReferenceDialog();
+	}
+	
+	// Export references
+	async function exportReferences() {
+		try {
+			const response = await fetch('/api/literature');
+			if (!response.ok) throw new Error('Failed to fetch references');
+			
+			const { items } = await response.json();
+			const { exportToBibtex, exportToCsv, exportToExcel } = await import('$lib/services/referenceParser');
+			
+			let content: string | Blob;
+			let filename: string;
+			let mimeType: string;
+			
+			if (referenceFormat === 'bibtex') {
+				content = exportToBibtex(items);
+				filename = 'references.bib';
+				mimeType = 'application/x-bibtex';
+			} else if (referenceFormat === 'csv') {
+				content = exportToCsv(items);
+				filename = 'references.csv';
+				mimeType = 'text/csv';
+			} else {
+				content = await exportToExcel(items);
+				filename = 'references.xlsx';
+				mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+			}
+			
+			// Download file
+			const blob = content instanceof Blob ? content : new Blob([content], { type: mimeType });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = filename;
+			a.click();
+			URL.revokeObjectURL(url);
+			
+			closeReferenceDialog();
+		} catch (err) {
+			console.error('Export failed:', err);
+		}
 	}
 	
 	// Extract text preview from Editor.js content
@@ -787,7 +922,7 @@
 								side="right" 
 								tabs={expandedRightTabs} 
 								activeTab={expandedRightTab}
-								onTabChange={(id) => expandedRightTab = id as 'stats' | 'tags'}
+								onTabChange={(id) => expandedRightTab = id as 'stats' | 'tags' | 'references'}
 								stickyContent={expandedRightTab === 'stats'}
 							>
 								{#if expandedRightTab === 'stats'}
@@ -812,6 +947,28 @@
 											placeholder={i18n.t('editor.addTag')}
 											onkeydown={(e) => e.key === 'Enter' && addExpandedTag()}
 										/>
+									</div>
+								{:else if expandedRightTab === 'references'}
+									<div class="references-content">
+										<div class="references-actions">
+											<button type="button" class="btn btn-sm" onclick={openReferenceImport}>
+												<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+													<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+													<polyline points="17 8 12 3 7 8"/>
+													<line x1="12" y1="3" x2="12" y2="15"/>
+												</svg>
+												Import
+											</button>
+											<button type="button" class="btn btn-sm" onclick={openReferenceExport}>
+												<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+													<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+													<polyline points="7 10 12 15 17 10"/>
+													<line x1="12" y1="15" x2="12" y2="3"/>
+												</svg>
+												Export
+											</button>
+										</div>
+										<p class="sidebar-empty-hint">{i18n.t('references.empty')}</p>
 									</div>
 								{/if}
 							</EditorSidebar>
@@ -863,6 +1020,105 @@
 			</div>
 		{/if}
 	</section>
+	
+	<!-- Reference Import/Export Dialog -->
+	{#if showReferenceDialog}
+		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+		<div class="modal-backdrop" onclick={closeReferenceDialog}>
+			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+			<div class="modal-dialog" role="dialog" aria-modal="true" onclick={(e) => e.stopPropagation()}>
+				<header class="modal-header">
+					<h2 class="modal-title">
+						{referenceDialogMode === 'import' ? i18n.t('references.import') : i18n.t('references.export')}
+					</h2>
+					<button type="button" class="modal-close" onclick={closeReferenceDialog} aria-label={i18n.t('action.close')}>
+						×
+					</button>
+				</header>
+				
+				<div class="modal-body">
+					<!-- Format selection -->
+					<div class="form-group">
+						<label class="form-label">{i18n.t('references.format')}</label>
+						<div class="format-options">
+							<label class="format-option">
+								<input type="radio" bind:group={referenceFormat} value="bibtex" />
+								<span>BibTeX (.bib)</span>
+							</label>
+							<label class="format-option">
+								<input type="radio" bind:group={referenceFormat} value="csv" />
+								<span>CSV (.csv)</span>
+							</label>
+							<label class="format-option">
+								<input type="radio" bind:group={referenceFormat} value="excel" />
+								<span>Excel (.xlsx)</span>
+							</label>
+						</div>
+					</div>
+					
+					{#if referenceDialogMode === 'import'}
+						<!-- File input for import -->
+						<div class="form-group">
+							<label class="form-label">{i18n.t('references.selectFile')}</label>
+							<input 
+								type="file" 
+								bind:this={referenceFileInput}
+								accept={referenceFormat === 'bibtex' ? '.bib,.bibtex' : referenceFormat === 'csv' ? '.csv' : '.xlsx,.xls'}
+								onchange={handleReferenceFileSelect}
+								class="file-input"
+							/>
+						</div>
+						
+						<!-- Preview imported references -->
+						{#if importedReferences.length > 0}
+							<div class="import-preview">
+								<h4>{importedReferences.length} {i18n.t('references.found')}</h4>
+								<ul class="reference-list">
+									{#each importedReferences.slice(0, 5) as ref}
+										<li class="reference-item">
+											<strong>{ref.title}</strong>
+											{#if ref.authors?.length}
+												<span class="reference-authors">{ref.authors.join(', ')}</span>
+											{/if}
+											{#if ref.year}
+												<span class="reference-year">({ref.year})</span>
+											{/if}
+										</li>
+									{/each}
+									{#if importedReferences.length > 5}
+										<li class="reference-item more">+{importedReferences.length - 5} {i18n.t('references.more')}</li>
+									{/if}
+								</ul>
+							</div>
+						{/if}
+					{:else}
+						<!-- Export info -->
+						<p class="export-info">{i18n.t('references.exportInfo')}</p>
+					{/if}
+				</div>
+				
+				<footer class="modal-footer">
+					<button type="button" class="btn btn-ghost" onclick={closeReferenceDialog}>
+						{i18n.t('action.cancel')}
+					</button>
+					{#if referenceDialogMode === 'import'}
+						<button 
+							type="button" 
+							class="btn btn-primary" 
+							onclick={saveImportedReferences}
+							disabled={importedReferences.length === 0}
+						>
+							{i18n.t('references.importSelected')}
+						</button>
+					{:else}
+						<button type="button" class="btn btn-primary" onclick={exportReferences}>
+							{i18n.t('references.exportNow')}
+						</button>
+					{/if}
+				</footer>
+			</div>
+		</div>
+	{/if}
 	
 	<!-- Context menu for marginalia -->
 	{#if showContextMenu}
@@ -1232,12 +1488,31 @@
 		grid-column: 1 / -1;
 		display: flex;
 		flex-direction: column;
-		background: var(--color-bg);
+		background: var(--color-bg-elevated);
 		border: 1px solid var(--color-active);
 		border-radius: var(--radius-md);
 		overflow: hidden;
 		min-height: 500px;
 		max-height: 80vh;
+	}
+	
+	/* Light theme: same background as marginalia */
+	:global(html:not(.dark)) .inline-expanded-editor {
+		background: var(--color-bg-elevated);
+	}
+	
+	/* Dark theme: pure black background */
+	:global(html.dark) .inline-expanded-editor {
+		background: #000;
+	}
+	
+	:global(html.dark) .inline-expanded-editor .expanded-editor-main {
+		background: #000;
+	}
+	
+	:global(html.dark) .inline-expanded-editor .central-header {
+		background: #000;
+		border-color: var(--color-border-subtle);
 	}
 	
 	/* Unified Sticky Header */
@@ -1326,11 +1601,12 @@
 		overflow-y: auto;
 		display: flex;
 		justify-content: center;
+		background: var(--color-bg-elevated);
 	}
 	
 	.expanded-editor-container {
 		width: 100%;
-		max-width: var(--content-max-width);
+		max-width: 100%;
 		min-height: 100%;
 	}
 	
@@ -1478,5 +1754,192 @@
 		.sidebar-tabs-standalone {
 			display: none;
 		}
+	}
+	
+	/* References Content */
+	.references-content {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+	
+	.references-actions {
+		display: flex;
+		gap: var(--space-2);
+	}
+	
+	.references-actions .btn {
+		display: flex;
+		align-items: center;
+		gap: var(--space-1);
+		flex: 1;
+		justify-content: center;
+	}
+	
+	/* Modal Dialog */
+	.modal-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+	}
+	
+	.modal-dialog {
+		background: var(--color-bg);
+		border-radius: var(--radius-lg);
+		box-shadow: var(--shadow-lg);
+		max-width: 500px;
+		width: 90%;
+		max-height: 80vh;
+		display: flex;
+		flex-direction: column;
+	}
+	
+	.modal-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: var(--space-4);
+		border-bottom: 1px solid var(--color-border-subtle);
+	}
+	
+	.modal-title {
+		font-family: var(--font-human);
+		font-size: var(--font-size-lg);
+		font-weight: 600;
+		color: var(--color-text);
+		margin: 0;
+	}
+	
+	.modal-close {
+		background: transparent;
+		border: none;
+		font-size: var(--font-size-xl);
+		color: var(--color-text-muted);
+		cursor: pointer;
+		line-height: 1;
+	}
+	
+	.modal-close:hover {
+		color: var(--color-text);
+	}
+	
+	.modal-body {
+		padding: var(--space-4);
+		overflow-y: auto;
+	}
+	
+	.modal-footer {
+		display: flex;
+		justify-content: flex-end;
+		gap: var(--space-2);
+		padding: var(--space-4);
+		border-top: 1px solid var(--color-border-subtle);
+	}
+	
+	/* Form elements */
+	.form-group {
+		margin-bottom: var(--space-4);
+	}
+	
+	.form-label {
+		display: block;
+		font-family: var(--font-machine);
+		font-size: var(--font-size-sm);
+		font-weight: 500;
+		color: var(--color-text);
+		margin-bottom: var(--space-2);
+	}
+	
+	.format-options {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+	
+	.format-option {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		font-family: var(--font-machine);
+		font-size: var(--font-size-sm);
+		color: var(--color-text-secondary);
+		cursor: pointer;
+	}
+	
+	.format-option:hover {
+		color: var(--color-text);
+	}
+	
+	.file-input {
+		width: 100%;
+		padding: var(--space-2);
+		font-family: var(--font-machine);
+		font-size: var(--font-size-sm);
+		color: var(--color-text);
+		background: var(--color-bg-sunken);
+		border: 1px dashed var(--color-border);
+		border-radius: var(--radius-md);
+	}
+	
+	.import-preview {
+		background: var(--color-bg-sunken);
+		border-radius: var(--radius-md);
+		padding: var(--space-3);
+	}
+	
+	.import-preview h4 {
+		font-family: var(--font-machine);
+		font-size: var(--font-size-sm);
+		font-weight: 500;
+		color: var(--color-text);
+		margin: 0 0 var(--space-2);
+	}
+	
+	.reference-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+	
+	.reference-item {
+		padding: var(--space-2) 0;
+		border-bottom: 1px solid var(--color-border-subtle);
+		font-family: var(--font-machine);
+		font-size: var(--font-size-xs);
+	}
+	
+	.reference-item:last-child {
+		border-bottom: none;
+	}
+	
+	.reference-item strong {
+		display: block;
+		color: var(--color-text);
+		margin-bottom: var(--space-1);
+	}
+	
+	.reference-authors {
+		color: var(--color-text-secondary);
+	}
+	
+	.reference-year {
+		color: var(--color-text-muted);
+		margin-left: var(--space-1);
+	}
+	
+	.reference-item.more {
+		font-style: italic;
+		color: var(--color-text-muted);
+	}
+	
+	.export-info {
+		font-family: var(--font-machine);
+		font-size: var(--font-size-sm);
+		color: var(--color-text-secondary);
+		margin: 0;
 	}
 </style>
