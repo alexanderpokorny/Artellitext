@@ -8,20 +8,29 @@
 	import { createI18n } from '$stores/i18n.svelte';
 	import { createTheme } from '$stores/theme.svelte';
 	import type { PageData, ActionData } from './$types';
-	import type { Theme, SupportedLanguage, CitationFormat } from '$types';
+	import type { SupportedLanguage, CitationFormat } from '$types';
 	
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	
 	const i18n = createI18n();
-	const { theme, setTheme } = createTheme();
+	const themeStore = createTheme();
 	
-	// Form state
-	let displayName = $state(data.user?.displayName || '');
+	// Derive user data reactively
+	let currentUser = $derived(data.user);
+	
+	// Form state - use derived values for initial state
+	let displayName = $state('');
 	let language = $state<SupportedLanguage>(i18n.language);
-	let selectedTheme = $state<Theme>($theme);
 	let cacheLimit = $state(100);
 	let enableGeolocation = $state(false);
 	let citationFormat = $state<CitationFormat>('apa');
+	
+	// Initialize displayName from user data
+	$effect(() => {
+		if (currentUser?.displayName && !displayName) {
+			displayName = currentUser.displayName;
+		}
+	});
 	
 	// API Keys (masked)
 	let openrouterKey = $state('');
@@ -113,7 +122,7 @@
 								type="email"
 								id="email"
 								class="form-input"
-								value={data.user?.email || ''}
+								value={currentUser?.email || ''}
 								disabled
 							/>
 							<span class="form-hint">E-Mail kann nicht geändert werden</span>
@@ -125,7 +134,7 @@
 								type="text"
 								id="username"
 								class="form-input"
-								value={data.user?.username || ''}
+								value={currentUser?.username || ''}
 								disabled
 							/>
 						</div>
@@ -167,8 +176,8 @@
 									type="radio"
 									name="theme"
 									value="light"
-									checked={$theme === 'light'}
-									onchange={() => { selectedTheme = 'light'; setTheme('light'); }}
+									checked={themeStore.theme === 'light'}
+									onchange={() => themeStore.setTheme('light')}
 								/>
 								<span class="theme-preview theme-light">
 									<span class="preview-icon">☀️</span>
@@ -181,8 +190,8 @@
 									type="radio"
 									name="theme"
 									value="dark"
-									checked={$theme === 'dark'}
-									onchange={() => { selectedTheme = 'dark'; setTheme('dark'); }}
+									checked={themeStore.theme === 'dark'}
+									onchange={() => themeStore.setTheme('dark')}
 								/>
 								<span class="theme-preview theme-dark">
 									<span class="preview-icon">🌙</span>
@@ -195,8 +204,8 @@
 									type="radio"
 									name="theme"
 									value="auto"
-									checked={$theme === 'auto'}
-									onchange={() => { selectedTheme = 'auto'; setTheme('auto'); }}
+									checked={themeStore.theme === 'auto'}
+									onchange={() => themeStore.setTheme('auto')}
 								/>
 								<span class="theme-preview theme-auto">
 									<span class="preview-icon">💻</span>

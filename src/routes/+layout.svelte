@@ -21,7 +21,6 @@
 	import { createI18n } from '$stores/i18n.svelte';
 	import { createUserState } from '$stores/user.svelte';
 	import type { LayoutData } from './$types';
-	import type { SessionUser } from '$types';
 	
 	// Props from server load
 	let { data, children }: { data: LayoutData; children: any } = $props();
@@ -29,15 +28,18 @@
 	// Check if we're on auth route (standalone, no app shell)
 	let isAuthRoute = $derived($page.url.pathname.startsWith('/auth'));
 	
+	// Derive user from data for reactivity
+	let currentUser = $derived(data.user);
+	
 	// Initialize stores with server data
 	const themeStore = createTheme();
 	const readingMode = createReadingMode();
 	const i18n = createI18n();
-	const userState = createUserState(data.user);
+	const userState = createUserState();
 	
 	// Update user state when data changes
 	$effect(() => {
-		userState.setUser(data.user);
+		userState.setUser(currentUser);
 	});
 	
 	// Local UI state
@@ -226,46 +228,18 @@
 			<!-- Bottom Navigation (sticky) -->
 			<ul class="nav-list nav-list-bottom" class:has-user={userState.user}>
 				{#if userState.user}
-					<!-- Profile -->
+					<!-- Settings (includes profile) -->
 					<li>
 						<a
-							href="/settings/profile"
+							href="/settings"
 							class="nav-item"
-							class:active={isActive('/settings/profile')}
+							class:active={isActive('/settings')}
 						>
-							<span class="nav-icon">{@html icons.profile}</span>
-							<span class="nav-label">{i18n.t('nav.profile')}</span>
+							<span class="nav-icon">{@html icons.settings}</span>
+							<span class="nav-label">{i18n.t('nav.settings')}</span>
 						</a>
 					</li>
 					
-					<!-- Admin (only for admin users) -->
-					{#if userState.user.role === 'admin' || userState.user.role === 'superadmin'}
-						<li>
-							<a
-								href="/admin"
-								class="nav-item"
-								class:active={isActive('/admin')}
-							>
-								<span class="nav-icon">{@html icons.admin}</span>
-								<span class="nav-label">{i18n.t('nav.admin')}</span>
-							</a>
-						</li>
-					{/if}
-				{/if}
-				
-				<!-- Settings -->
-				<li>
-					<a
-						href="/settings"
-						class="nav-item"
-						class:active={$page.url.pathname === '/settings'}
-					>
-						<span class="nav-icon">{@html icons.settings}</span>
-						<span class="nav-label">{i18n.t('nav.settings')}</span>
-					</a>
-				</li>
-				
-				{#if userState.user}
 					<li>
 						<form action="/auth/logout" method="POST" class="logout-form">
 							<button type="submit" class="nav-item">
@@ -273,6 +247,18 @@
 								<span class="nav-label">{i18n.t('nav.logout')}</span>
 							</button>
 						</form>
+					</li>
+				{:else}
+					<!-- Settings for non-logged-in users -->
+					<li>
+						<a
+							href="/settings"
+							class="nav-item"
+							class:active={$page.url.pathname === '/settings'}
+						>
+							<span class="nav-icon">{@html icons.settings}</span>
+							<span class="nav-label">{i18n.t('nav.settings')}</span>
+						</a>
 					</li>
 				{/if}
 			</ul>
