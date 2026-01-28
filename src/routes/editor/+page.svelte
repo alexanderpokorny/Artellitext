@@ -2,14 +2,17 @@
   Artellico - Editor Page
   
   Block-based editor with Editor.js integration and LaTeX support.
-  Features: Marginalia, Tags, Full-width toggle, Offline-first saving.
+  Features: Tabbed sidebars (Marginalia, Spellcheck | Stats, Tags), Offline-first saving.
 -->
 
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { browser } from '$app/environment';
 	import { createI18n } from '$stores/i18n.svelte';
-	import { getEditorStats, extractTextFromEditorData, calculateWordCount, calculateReadingTime } from '$stores/editorStats.svelte';
+	import { getEditorStats } from '$stores/editorStats.svelte';
+	import { analyzeText, extractTextFromBlocks, getEmptyStats, type TextStats } from '$lib/services/textAnalysis';
+	import EditorSidebar from '$lib/components/editor/EditorSidebar.svelte';
+	import TextStatsPanel from '$lib/components/editor/TextStatsPanel.svelte';
 	import type { MarginaliaNote } from '$lib/types';
 	import type { PageData } from './$types';
 	
@@ -31,6 +34,40 @@
 	let showReferencePanel = $state(false);
 	let isFullscreen = $state(false);
 	let fullWidth = $state(true);
+	
+	// Sidebar tab state
+	let leftTab = $state<'marginalia' | 'spellcheck'>('marginalia');
+	let rightTab = $state<'stats' | 'tags'>('stats');
+	
+	// Text statistics
+	let textStats = $state<TextStats>(getEmptyStats());
+	
+	// Tab configurations
+	const leftTabs = [
+		{
+			id: 'marginalia',
+			icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+			tooltipKey: 'sidebar.marginalia',
+		},
+		{
+			id: 'spellcheck',
+			icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>',
+			tooltipKey: 'sidebar.spellcheck',
+		},
+	];
+	
+	const rightTabs = [
+		{
+			id: 'stats',
+			icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>',
+			tooltipKey: 'sidebar.stats',
+		},
+		{
+			id: 'tags',
+			icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+			tooltipKey: 'sidebar.tags',
+		},
+	];
 	
 	// Marginalia state
 	let marginalia = $state<MarginaliaNote[]>([]);
@@ -287,9 +324,12 @@
 		
 		try {
 			const data = await editor.save();
-			const text = extractTextFromEditorData(data);
-			wordCount = calculateWordCount(text);
-			readingTime = calculateReadingTime(wordCount);
+			const text = extractTextFromBlocks(data.blocks || []);
+			
+			// Update text statistics
+			textStats = analyzeText(text);
+			wordCount = textStats.words;
+			readingTime = textStats.readingTime;
 			
 			// Update global stats for footer
 			editorStats.update(wordCount, readingTime);
@@ -306,23 +346,41 @@
 		
 		try {
 			const content = await editor.save();
-			const noteData = { title, content, tags, marginalia, noteId: null };
 			
-			// Save to local cache first
+			// Ensure title is not empty
+			const noteTitle = title.trim() || i18n.t('editor.untitled');
+			
+			const noteData = { 
+				title: noteTitle, 
+				content, 
+				tags: tags || [] 
+			};
+			
+			// Save to local cache first (offline support)
 			if (browser) {
-				const { saveNoteToCache } = await import('$stores/offline');
-				await saveNoteToCache(noteData);
+				try {
+					const { saveNoteToCache } = await import('$stores/offline');
+					await saveNoteToCache({ ...noteData, marginalia, noteId: null });
+				} catch (cacheErr) {
+					console.warn('Cache save failed:', cacheErr);
+				}
 			}
 			
-			// Sync to server (non-blocking)
-			fetch('/api/notes', {
+			// Sync to server
+			const response = await fetch('/api/notes', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(noteData),
-			}).catch(err => console.warn('Server sync pending:', err));
+			});
+			
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({}));
+				throw new Error(errorData.error || `HTTP ${response.status}`);
+			}
 			
 			saveStatus = 'saved';
-		} catch {
+		} catch (err) {
+			console.error('Save failed:', err);
 			saveStatus = 'error';
 		}
 	}
@@ -466,88 +524,103 @@
 	</header>
 	
 	<div class="editor-layout">
-		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-		<!-- Marginalia column (left) - click to add, no label -->
-		<div 
-			class="marginalia-column"
-			bind:this={marginaliaColumn}
-			onclick={handleMarginaliaColumnClick}
-			onkeydown={(e) => e.key === 'Enter' && handleMarginaliaColumnClick(e as unknown as MouseEvent)}
-			role="region"
-			aria-label="Marginalia"
-			tabindex="-1"
-			title={i18n.t('editor.newMarginalia')}
+		<!-- Left Sidebar with Tabs -->
+		<EditorSidebar 
+			side="left" 
+			tabs={leftTabs} 
+			activeTab={leftTab}
+			onTabChange={(id) => leftTab = id as 'marginalia' | 'spellcheck'}
 		>
-			{#each sortedMarginalia as note (note.id)}
-				<div
-					class="marginalia-note"
-					class:editing={editingMarginaliaId === note.id}
-					class:dragging={draggingMarginaliaId === note.id}
-					style="top: {note.top}px"
-					oncontextmenu={(e) => handleMarginaliaContextMenu(e, note.id)}
-					role="group"
-					aria-label="Marginal note"
+			{#if leftTab === 'marginalia'}
+				<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+				<div 
+					class="marginalia-content"
+					bind:this={marginaliaColumn}
+					onclick={handleMarginaliaColumnClick}
+					onkeydown={(e) => e.key === 'Enter' && handleMarginaliaColumnClick(e as unknown as MouseEvent)}
+					role="region"
+					aria-label="Marginalia"
+					tabindex="-1"
+					title={i18n.t('editor.newMarginalia')}
 				>
-					<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-					<!-- Drag handle (left border) -->
-					<div 
-						class="marginalia-drag-handle"
-						onmousedown={(e) => handleMarginaliaDragStart(e, note.id)}
-						role="separator"
-						aria-orientation="vertical"
-						tabindex="-1"
-					></div>
+					{#each sortedMarginalia as note (note.id)}
+						<div
+							class="marginalia-note"
+							class:editing={editingMarginaliaId === note.id}
+							class:dragging={draggingMarginaliaId === note.id}
+							style="top: {note.top}px"
+							oncontextmenu={(e) => handleMarginaliaContextMenu(e, note.id)}
+							role="group"
+							aria-label="Marginal note"
+						>
+							<div 
+								class="marginalia-drag-handle"
+								onmousedown={(e) => handleMarginaliaDragStart(e, note.id)}
+								role="separator"
+								aria-orientation="vertical"
+								tabindex="-1"
+							></div>
+							
+							<textarea
+								class="marginalia-textarea"
+								value={note.content}
+								placeholder={i18n.t('editor.marginalia') + '...'}
+								oninput={(e) => updateMarginaliaContent(note.id, e.currentTarget.value)}
+								onfocus={() => editingMarginaliaId = note.id}
+								onblur={() => setTimeout(() => editingMarginaliaId = null, 100)}
+								onclick={(e) => e.stopPropagation()}
+							></textarea>
+						</div>
+					{/each}
 					
-					<textarea
-						class="marginalia-textarea"
-						value={note.content}
-						placeholder={i18n.t('editor.marginalia') + '...'}
-						oninput={(e) => updateMarginaliaContent(note.id, e.currentTarget.value)}
-						onfocus={() => editingMarginaliaId = note.id}
-						onblur={() => setTimeout(() => editingMarginaliaId = null, 100)}
-						onclick={(e) => e.stopPropagation()}
-					></textarea>
+					{#if marginalia.length === 0}
+						<p class="sidebar-empty-hint">{i18n.t('editor.newMarginalia')}</p>
+					{/if}
 				</div>
-			{/each}
-		</div>
+			{:else if leftTab === 'spellcheck'}
+				<div class="spellcheck-content">
+					<p class="sidebar-empty-hint">Rechtschreibprüfung wird in einer zukünftigen Version verfügbar sein.</p>
+				</div>
+			{/if}
+		</EditorSidebar>
 		
 		<!-- Main editor -->
 		<main class="editor-main">
 			<div class="editor-container prose" bind:this={editorContainer}></div>
 		</main>
 		
-		<!-- Tags column (right) - no label -->
-		<aside class="tags-column">
-			<div class="tags-section">
-				<div class="tags-list">
-					{#each tags as tag}
-						<span class="tag">
-							{tag}
-							<button type="button" class="tag-remove" onclick={() => removeTag(tag)} aria-label={i18n.t('action.delete')}>
-								×
-							</button>
-						</span>
-					{/each}
+		<!-- Right Sidebar with Tabs -->
+		<EditorSidebar 
+			side="right" 
+			tabs={rightTabs} 
+			activeTab={rightTab}
+			onTabChange={(id) => rightTab = id as 'stats' | 'tags'}
+		>
+			{#if rightTab === 'stats'}
+				<TextStatsPanel stats={textStats} />
+			{:else if rightTab === 'tags'}
+				<div class="tags-content">
+					<div class="tags-list">
+						{#each tags as tag}
+							<span class="tag">
+								{tag}
+								<button type="button" class="tag-remove" onclick={() => removeTag(tag)} aria-label={i18n.t('action.delete')}>
+									×
+								</button>
+							</span>
+						{/each}
+					</div>
+					
+					<input
+						type="text"
+						class="tag-input"
+						bind:value={newTag}
+						placeholder={i18n.t('editor.addTag')}
+						onkeydown={(e) => e.key === 'Enter' && addTag()}
+					/>
 				</div>
-				
-				<input
-					type="text"
-					class="tag-input"
-					bind:value={newTag}
-					placeholder={i18n.t('editor.addTag')}
-					onkeydown={(e) => e.key === 'Enter' && addTag()}
-				/>
-			</div>
-			
-			<div class="meta-section">
-				<div class="meta-item">
-					<span class="meta-label">{i18n.t('editor.wordCount', { count: wordCount })}</span>
-				</div>
-				<div class="meta-item">
-					<span class="meta-label">{i18n.t('editor.readingTime', { minutes: readingTime })}</span>
-				</div>
-			</div>
-		</aside>
+			{/if}
+		</EditorSidebar>
 		
 		<!-- References panel -->
 		{#if showReferencePanel}
@@ -604,13 +677,9 @@
 		z-index: var(--z-modal);
 	}
 	
-	/* Fullscreen: Keep marginalia, hide tags only */
-	.editor-page.fullscreen .tags-column {
-		display: none;
-	}
-	
+	/* Fullscreen: Adjust layout */
 	.editor-page.fullscreen .editor-layout {
-		grid-template-columns: var(--margin-column-width) 1fr;
+		grid-template-columns: var(--margin-column-width) 1fr var(--tag-column-width);
 	}
 	
 	.editor-page.fullscreen .editor-main {
@@ -717,21 +786,33 @@
 		overflow: hidden;
 	}
 	
-	/* Marginalia column - click to add */
-	.marginalia-column {
+	/* Sidebar content areas */
+	.marginalia-content {
 		position: relative;
-		padding: var(--space-4);
-		border-right: 1px solid var(--color-border-subtle);
-		overflow-y: auto;
+		min-height: 200px;
 		cursor: crosshair;
+	}
+	
+	.spellcheck-content,
+	.tags-content {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+	
+	.sidebar-empty-hint {
+		font-family: var(--font-machine);
+		font-size: var(--font-size-xs);
+		color: var(--color-text-muted);
+		text-align: center;
+		padding: var(--space-4);
 	}
 	
 	/* Marginalia notes */
 	.marginalia-note {
-		position: absolute;
-		left: var(--space-2);
-		right: var(--space-2);
+		position: relative;
 		display: flex;
+		margin-bottom: var(--space-2);
 		transition: box-shadow var(--transition-fast);
 	}
 	
@@ -813,22 +894,7 @@
 		cursor: grab;
 	}
 	
-	/* Tags column - no label */
-	.tags-column {
-		padding: var(--space-4);
-		border-left: 1px solid var(--color-border-subtle);
-		overflow-y: auto;
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-4);
-	}
-	
-	.tags-section {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-2);
-	}
-	
+	/* Tags within sidebar */
 	.tags-list {
 		display: flex;
 		flex-direction: column;
@@ -879,23 +945,6 @@
 	}
 	
 	.tag-input::placeholder {
-		color: var(--color-text-muted);
-	}
-	
-	/* Meta section */
-	.meta-section {
-		margin-top: auto;
-		padding-top: var(--space-4);
-		border-top: 1px solid var(--color-border-subtle);
-	}
-	
-	.meta-item {
-		padding: var(--space-1) 0;
-	}
-	
-	.meta-label {
-		font-family: var(--font-machine);
-		font-size: var(--font-size-xs);
 		color: var(--color-text-muted);
 	}
 	
@@ -996,8 +1045,9 @@
 			grid-template-columns: 1fr;
 		}
 		
-		.marginalia-column,
-		.tags-column {
+		/* Hide sidebars on mobile */
+		.editor-layout > :first-child,
+		.editor-layout > :last-child {
 			display: none;
 		}
 	}

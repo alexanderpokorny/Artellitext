@@ -13,6 +13,9 @@
 	import type { PageData } from './$types';
 	import { createI18n } from '$stores/i18n.svelte';
 	import type { MarginaliaNote } from '$lib/types';
+	import EditorSidebar from '$lib/components/editor/EditorSidebar.svelte';
+	import TextStatsPanel from '$lib/components/editor/TextStatsPanel.svelte';
+	import { analyzeText, extractTextFromBlocks, getEmptyStats, type TextStats } from '$lib/services/textAnalysis';
 	
 	let { data }: { data: PageData } = $props();
 	
@@ -62,6 +65,29 @@
 	let currentPage = $state(1);
 	let expandedNoteId = $state<string | null>(null);
 	let loadMoreTrigger = $state<HTMLElement | null>(null);
+	
+	// Expanded editor state
+	let expandedEditorContainer: HTMLElement;
+	let expandedEditor: any = $state(null);
+	let expandedNoteTitle = $state('');
+	let expandedNoteTags = $state<string[]>([]);
+	let expandedNewTag = $state('');
+	let expandedMarginalia = $state<MarginaliaNote[]>([]);
+	let expandedTextStats = $state<TextStats>(getEmptyStats());
+	let expandedSaveStatus = $state<'saved' | 'saving' | 'unsaved'>('saved');
+	let expandedLeftTab = $state<'marginalia' | 'spellcheck'>('marginalia');
+	let expandedRightTab = $state<'stats' | 'tags'>('stats');
+	
+	// Tab configurations for expanded editor
+	const expandedLeftTabs = [
+		{ id: 'marginalia', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>', tooltipKey: 'sidebar.marginalia' },
+		{ id: 'spellcheck', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>', tooltipKey: 'sidebar.spellcheck' },
+	];
+	
+	const expandedRightTabs = [
+		{ id: 'stats', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>', tooltipKey: 'sidebar.stats' },
+		{ id: 'tags', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>', tooltipKey: 'sidebar.tags' },
+	];
 	
 	// Sorted notes
 	const sortedNotes = $derived(() => {
@@ -146,13 +172,147 @@
 	}
 	
 	// Handle note click - expand and enable edit
-	function handleNoteClick(noteId: string) {
+	async function handleNoteClick(noteId: string) {
 		if (expandedNoteId === noteId) {
 			// Already expanded, go to full editor
 			goto(`/editor/${noteId}`);
 		} else {
+			// Close previous expanded editor
+			await closeExpandedEditor();
 			expandedNoteId = noteId;
+			// Load note data for expanded view
+			const note = notes.find(n => n.id === noteId);
+			if (note) {
+				expandedNoteTitle = note.title || i18n.t('editor.untitled');
+				expandedNoteTags = [...(note.tags || [])];
+				// Initialize expanded editor after DOM update
+				setTimeout(() => initExpandedEditor(note), 50);
+			}
 		}
+	}
+	
+	// Close expanded editor and save
+	async function closeExpandedEditor() {
+		if (expandedEditor) {
+			if (expandedSaveStatus === 'unsaved') {
+				await saveExpandedNote();
+			}
+			expandedEditor.destroy();
+			expandedEditor = null;
+		}
+		expandedNoteId = null;
+		expandedMarginalia = [];
+		expandedTextStats = getEmptyStats();
+	}
+	
+	// Initialize expanded editor with note content
+	async function initExpandedEditor(note: NoteItem) {
+		if (!browser || !expandedEditorContainer) return;
+		
+		try {
+			const EditorJS = (await import('@editorjs/editorjs')).default;
+			const Header = (await import('@editorjs/header')).default;
+			const List = (await import('@editorjs/list')).default;
+			const Quote = (await import('@editorjs/quote')).default;
+			// @ts-expect-error No type declarations available
+			const DragDrop = (await import('editorjs-drag-drop')).default;
+			
+			expandedEditor = new EditorJS({
+				holder: expandedEditorContainer,
+				data: note.content || { blocks: [] },
+				placeholder: i18n.t('editor.placeholder'),
+				minHeight: 200,
+				tools: {
+					header: {
+						// @ts-expect-error Editor.js types
+						class: Header,
+						config: { levels: [2, 3, 4], defaultLevel: 2 },
+					},
+					list: {
+						// @ts-expect-error Editor.js types
+						class: List,
+						inlineToolbar: true,
+					},
+					quote: { class: Quote, inlineToolbar: true },
+				},
+				onChange: async () => {
+					expandedSaveStatus = 'unsaved';
+					await updateExpandedStats();
+				},
+				onReady: () => {
+					new DragDrop(expandedEditor);
+					updateExpandedStats();
+				},
+			});
+		} catch (err) {
+			console.error('Failed to initialize expanded editor:', err);
+		}
+	}
+	
+	// Update expanded editor text stats
+	async function updateExpandedStats() {
+		if (!expandedEditor) return;
+		try {
+			const data = await expandedEditor.save();
+			const text = extractTextFromBlocks(data.blocks || []);
+			expandedTextStats = analyzeText(text);
+		} catch {
+			// Ignore
+		}
+	}
+	
+	// Save expanded note
+	async function saveExpandedNote() {
+		if (!expandedEditor || !expandedNoteId) return;
+		
+		expandedSaveStatus = 'saving';
+		try {
+			const content = await expandedEditor.save();
+			const response = await fetch(`/api/notes/${expandedNoteId}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					title: expandedNoteTitle || i18n.t('editor.untitled'),
+					content,
+					tags: expandedNoteTags,
+				}),
+			});
+			
+			if (response.ok) {
+				expandedSaveStatus = 'saved';
+				// Update note in list
+				const noteIndex = notes.findIndex(n => n.id === expandedNoteId);
+				if (noteIndex >= 0) {
+					notes[noteIndex] = {
+						...notes[noteIndex],
+						title: expandedNoteTitle,
+						content,
+						tags: expandedNoteTags,
+						updated_at: new Date().toISOString(),
+					};
+				}
+			} else {
+				throw new Error('Save failed');
+			}
+		} catch {
+			expandedSaveStatus = 'unsaved';
+		}
+	}
+	
+	// Add tag in expanded view
+	function addExpandedTag() {
+		const tag = expandedNewTag.trim();
+		if (tag && !expandedNoteTags.includes(tag)) {
+			expandedNoteTags = [...expandedNoteTags, tag];
+			expandedNewTag = '';
+			expandedSaveStatus = 'unsaved';
+		}
+	}
+	
+	// Remove tag in expanded view
+	function removeExpandedTag(tag: string) {
+		expandedNoteTags = expandedNoteTags.filter(t => t !== tag);
+		expandedSaveStatus = 'unsaved';
 	}
 	
 	// Extract text preview from Editor.js content
@@ -305,8 +465,12 @@
 	
 	// Keyboard shortcuts
 	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape' && showContextMenu) {
-			closeContextMenu();
+		if (event.key === 'Escape') {
+			if (showContextMenu) {
+				closeContextMenu();
+			} else if (expandedNoteId) {
+				closeExpandedEditor();
+			}
 		}
 	}
 	
@@ -341,6 +505,7 @@
 		
 		return () => {
 			quickEditor?.destroy();
+			expandedEditor?.destroy();
 			document.removeEventListener('click', handleClickOutside);
 			observer?.disconnect();
 		};
@@ -353,7 +518,115 @@
 	onmouseup={handleMarginaliaDragEnd}
 />
 
-<div class="dashboard">
+<div class="dashboard" class:has-expanded={expandedNoteId !== null}>
+	<!-- Expanded Editor View (full-width with sidebars, no header) -->
+	{#if expandedNoteId}
+		<div class="expanded-editor-overlay">
+			<div class="expanded-editor-header">
+				<input
+					type="text"
+					class="expanded-title-input"
+					bind:value={expandedNoteTitle}
+					placeholder={i18n.t('editor.untitled')}
+					oninput={() => expandedSaveStatus = 'unsaved'}
+				/>
+				<div class="expanded-header-actions">
+					<span class="expanded-save-status" class:saved={expandedSaveStatus === 'saved'} class:saving={expandedSaveStatus === 'saving'}>
+						{#if expandedSaveStatus === 'saved'}
+							{i18n.t('editor.saved')}
+						{:else if expandedSaveStatus === 'saving'}
+							{i18n.t('editor.saving')}
+						{:else}
+							●
+						{/if}
+					</span>
+					<button type="button" class="btn btn-ghost btn-sm" onclick={() => goto(`/editor/${expandedNoteId}`)}>
+						{i18n.t('editor.fullscreen')}
+					</button>
+					<button type="button" class="btn btn-ghost btn-sm" onclick={closeExpandedEditor} aria-label={i18n.t('action.close')}>
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<line x1="18" y1="6" x2="6" y2="18" />
+							<line x1="6" y1="6" x2="18" y2="18" />
+						</svg>
+					</button>
+				</div>
+			</div>
+			
+			<div class="expanded-editor-layout">
+				<!-- Left Sidebar -->
+				<EditorSidebar 
+					side="left" 
+					tabs={expandedLeftTabs} 
+					activeTab={expandedLeftTab}
+					onTabChange={(id) => expandedLeftTab = id as 'marginalia' | 'spellcheck'}
+				>
+					{#if expandedLeftTab === 'marginalia'}
+						<div class="marginalia-content">
+							{#each expandedMarginalia as note (note.id)}
+								<div class="marginalia-note">
+									<textarea
+										class="marginalia-textarea"
+										value={note.content}
+										placeholder={i18n.t('editor.marginalia') + '...'}
+										oninput={(e) => {
+											note.content = e.currentTarget.value;
+											expandedSaveStatus = 'unsaved';
+										}}
+									></textarea>
+								</div>
+							{/each}
+							{#if expandedMarginalia.length === 0}
+								<p class="sidebar-empty-hint">{i18n.t('editor.newMarginalia')}</p>
+							{/if}
+						</div>
+					{:else if expandedLeftTab === 'spellcheck'}
+						<div class="spellcheck-content">
+							<p class="sidebar-empty-hint">Rechtschreibprüfung wird in einer zukünftigen Version verfügbar sein.</p>
+						</div>
+					{/if}
+				</EditorSidebar>
+				
+				<!-- Main Editor -->
+				<main class="expanded-editor-main">
+					<div class="expanded-editor-container prose" bind:this={expandedEditorContainer}></div>
+				</main>
+				
+				<!-- Right Sidebar -->
+				<EditorSidebar 
+					side="right" 
+					tabs={expandedRightTabs} 
+					activeTab={expandedRightTab}
+					onTabChange={(id) => expandedRightTab = id as 'stats' | 'tags'}
+				>
+					{#if expandedRightTab === 'stats'}
+						<TextStatsPanel stats={expandedTextStats} />
+					{:else if expandedRightTab === 'tags'}
+						<div class="tags-content">
+							<div class="tags-list">
+								{#each expandedNoteTags as tag}
+									<span class="tag">
+										{tag}
+										<button type="button" class="tag-remove" onclick={() => removeExpandedTag(tag)} aria-label={i18n.t('action.delete')}>
+											×
+										</button>
+									</span>
+								{/each}
+							</div>
+							
+							<input
+								type="text"
+								class="tag-input"
+								bind:value={expandedNewTag}
+								placeholder={i18n.t('editor.addTag')}
+								onkeydown={(e) => e.key === 'Enter' && addExpandedTag()}
+							/>
+						</div>
+					{/if}
+				</EditorSidebar>
+			</div>
+		</div>
+	{/if}
+	
 	<!-- Notes List with View Options -->
 	<section class="notes-section" onblur={handleEditorBlur}>
 		<div class="notes-header">
@@ -913,6 +1186,200 @@
 		to { transform: rotate(360deg); }
 	}
 	
+	/* Expanded Editor Overlay */
+	.dashboard.has-expanded .notes-section {
+		display: none;
+	}
+	
+	.expanded-editor-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: var(--color-bg);
+		z-index: var(--z-modal);
+		display: flex;
+		flex-direction: column;
+	}
+	
+	.expanded-editor-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-4);
+		padding: var(--space-3) var(--space-4);
+		border-bottom: 1px solid var(--color-border-subtle);
+		background: var(--color-bg);
+	}
+	
+	.expanded-title-input {
+		flex: 1;
+		max-width: 500px;
+		padding: var(--space-2);
+		font-family: var(--font-human);
+		font-size: var(--font-size-lg);
+		font-weight: 500;
+		color: var(--color-text);
+		background: transparent;
+		border: none;
+		border-bottom: 2px solid transparent;
+		outline: none;
+		transition: border-color var(--transition-fast);
+	}
+	
+	.expanded-title-input:focus {
+		border-bottom-color: var(--color-active);
+	}
+	
+	.expanded-header-actions {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+	}
+	
+	.expanded-save-status {
+		font-family: var(--font-machine);
+		font-size: var(--font-size-xs);
+		color: var(--color-text-muted);
+	}
+	
+	.expanded-save-status.saved { color: var(--color-success); }
+	.expanded-save-status.saving { color: var(--color-warning); }
+	
+	.expanded-editor-layout {
+		display: grid;
+		grid-template-columns: var(--margin-column-width) 1fr var(--tag-column-width);
+		flex: 1;
+		overflow: hidden;
+	}
+	
+	.expanded-editor-main {
+		padding: var(--space-8);
+		overflow-y: auto;
+		display: flex;
+		justify-content: center;
+	}
+	
+	.expanded-editor-container {
+		width: 100%;
+		max-width: var(--content-max-width);
+		min-height: 100%;
+	}
+	
+	/* Editor.js overrides for expanded editor */
+	.expanded-editor-container :global(.ce-block__content) {
+		max-width: 100%;
+	}
+	
+	.expanded-editor-container :global(.ce-toolbar__content) {
+		max-width: 100%;
+	}
+	
+	.expanded-editor-container :global(.codex-editor__redactor) {
+		padding-bottom: 200px;
+	}
+	
+	/* Expanded view reuses sidebar styles from EditorSidebar */
+	.expanded-editor-overlay .marginalia-content {
+		min-height: 200px;
+	}
+	
+	.expanded-editor-overlay .sidebar-empty-hint {
+		font-family: var(--font-machine);
+		font-size: var(--font-size-xs);
+		color: var(--color-text-muted);
+		text-align: center;
+		padding: var(--space-4);
+	}
+	
+	.expanded-editor-overlay .tags-content {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+	
+	.expanded-editor-overlay .tags-list {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+	}
+	
+	.expanded-editor-overlay .tag {
+		display: inline-flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: var(--space-1) var(--space-2);
+		font-family: var(--font-machine);
+		font-size: var(--font-size-xs);
+		background: var(--color-bg-sunken);
+		border-radius: var(--radius-sm);
+		color: var(--color-text-secondary);
+	}
+	
+	.expanded-editor-overlay .tag-remove {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 16px;
+		height: 16px;
+		margin-left: var(--space-1);
+		background: transparent;
+		border: none;
+		color: var(--color-text-muted);
+		cursor: pointer;
+		font-size: 14px;
+		line-height: 1;
+	}
+	
+	.expanded-editor-overlay .tag-remove:hover {
+		color: var(--color-error);
+	}
+	
+	.expanded-editor-overlay .tag-input {
+		width: 100%;
+		padding: var(--space-2);
+		font-family: var(--font-machine);
+		font-size: var(--font-size-xs);
+		color: var(--color-text);
+		background: var(--color-bg-sunken);
+		border: none;
+		border-radius: var(--radius-sm);
+		outline: none;
+	}
+	
+	.expanded-editor-overlay .marginalia-note {
+		margin-bottom: var(--space-2);
+	}
+	
+	.expanded-editor-overlay .marginalia-textarea {
+		width: 100%;
+		min-height: 24px;
+		padding: var(--space-1) var(--space-2);
+		font-family: var(--font-machine);
+		font-size: var(--font-size-xs);
+		line-height: var(--line-height-relaxed);
+		color: var(--color-text-secondary);
+		background: transparent;
+		border: none;
+		outline: none;
+		resize: none;
+		overflow: hidden;
+		field-sizing: content;
+	}
+	
+	/* Mobile: Hide sidebars in expanded view */
+	@media (max-width: 1024px) {
+		.expanded-editor-layout {
+			grid-template-columns: 1fr;
+		}
+		
+		.expanded-editor-layout > :first-child,
+		.expanded-editor-layout > :last-child {
+			display: none;
+		}
+	}
+	
 	/* Responsive */
 	@media (max-width: 768px) {
 		.notes-header {
@@ -927,6 +1394,14 @@
 		.notes-container.grid-small,
 		.notes-container.grid-large {
 			grid-template-columns: 1fr;
+		}
+		
+		.expanded-editor-header {
+			flex-wrap: wrap;
+		}
+		
+		.expanded-title-input {
+			max-width: 100%;
 		}
 	}
 </style>

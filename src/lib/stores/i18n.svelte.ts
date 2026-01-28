@@ -172,6 +172,40 @@ export const translations = {
 		
 		// Editor extras
 		'editor.words': 'Wörter',
+		
+		// Sidebar tabs
+		'sidebar.marginalia': 'Marginalien',
+		'sidebar.spellcheck': 'Rechtschreibung & Grammatik',
+		'sidebar.stats': 'Textstatistik',
+		'sidebar.tags': 'Tags',
+		
+		// Text Statistics
+		'stats.counts': 'Zählungen',
+		'stats.words': 'Wörter',
+		'stats.characters': 'Zeichen',
+		'stats.sentences': 'Sätze',
+		'stats.paragraphs': 'Absätze',
+		'stats.time': 'Zeitschätzung',
+		'stats.readingTimeMin': 'Min. Lesezeit',
+		'stats.speakingTimeMin': 'Min. Sprechzeit',
+		'stats.readability': 'Lesbarkeit',
+		'stats.readability.veryEasy': 'Sehr einfach',
+		'stats.readability.easy': 'Einfach',
+		'stats.readability.fairlyEasy': 'Relativ einfach',
+		'stats.readability.standard': 'Standard',
+		'stats.readability.fairlyDifficult': 'Relativ schwer',
+		'stats.readability.difficult': 'Schwer',
+		'stats.readability.veryDifficult': 'Sehr schwer',
+		'stats.grade.elementary': 'Grundschule',
+		'stats.grade.middleSchool': 'Mittelstufe',
+		'stats.grade.highSchool': 'Oberstufe',
+		'stats.grade.college': 'Universität',
+		'stats.avgWordsPerSentence': 'Ø Wörter/Satz',
+		'stats.quality': 'Schreibqualität',
+		'stats.hardSentences': 'Schwere Sätze',
+		'stats.veryHardSentences': 'Sehr schwere Sätze',
+		'stats.adverbs': 'Adverbien',
+		'stats.passiveVoice': 'Passiv',
 	},
 	
 	en: {
@@ -326,6 +360,40 @@ export const translations = {
 		
 		// Editor extras
 		'editor.words': 'words',
+		
+		// Sidebar tabs
+		'sidebar.marginalia': 'Marginalia',
+		'sidebar.spellcheck': 'Spelling & Grammar',
+		'sidebar.stats': 'Text Statistics',
+		'sidebar.tags': 'Tags',
+		
+		// Text Statistics
+		'stats.counts': 'Counts',
+		'stats.words': 'Words',
+		'stats.characters': 'Characters',
+		'stats.sentences': 'Sentences',
+		'stats.paragraphs': 'Paragraphs',
+		'stats.time': 'Time Estimate',
+		'stats.readingTimeMin': 'Min. reading',
+		'stats.speakingTimeMin': 'Min. speaking',
+		'stats.readability': 'Readability',
+		'stats.readability.veryEasy': 'Very easy',
+		'stats.readability.easy': 'Easy',
+		'stats.readability.fairlyEasy': 'Fairly easy',
+		'stats.readability.standard': 'Standard',
+		'stats.readability.fairlyDifficult': 'Fairly difficult',
+		'stats.readability.difficult': 'Difficult',
+		'stats.readability.veryDifficult': 'Very difficult',
+		'stats.grade.elementary': 'Elementary',
+		'stats.grade.middleSchool': 'Middle school',
+		'stats.grade.highSchool': 'High school',
+		'stats.grade.college': 'College',
+		'stats.avgWordsPerSentence': 'Avg words/sentence',
+		'stats.quality': 'Writing Quality',
+		'stats.hardSentences': 'Hard sentences',
+		'stats.veryHardSentences': 'Very hard sentences',
+		'stats.adverbs': 'Adverbs',
+		'stats.passiveVoice': 'Passive voice',
 	},
 	
 	fr: {
@@ -480,6 +548,40 @@ export const translations = {
 		
 		// Editor extras
 		'editor.words': 'mots',
+		
+		// Sidebar tabs
+		'sidebar.marginalia': 'Marginalia',
+		'sidebar.spellcheck': 'Orthographe & Grammaire',
+		'sidebar.stats': 'Statistiques',
+		'sidebar.tags': 'Tags',
+		
+		// Text Statistics
+		'stats.counts': 'Comptages',
+		'stats.words': 'Mots',
+		'stats.characters': 'Caractères',
+		'stats.sentences': 'Phrases',
+		'stats.paragraphs': 'Paragraphes',
+		'stats.time': 'Estimation du temps',
+		'stats.readingTimeMin': 'Min. de lecture',
+		'stats.speakingTimeMin': 'Min. de parole',
+		'stats.readability': 'Lisibilité',
+		'stats.readability.veryEasy': 'Très facile',
+		'stats.readability.easy': 'Facile',
+		'stats.readability.fairlyEasy': 'Assez facile',
+		'stats.readability.standard': 'Standard',
+		'stats.readability.fairlyDifficult': 'Assez difficile',
+		'stats.readability.difficult': 'Difficile',
+		'stats.readability.veryDifficult': 'Très difficile',
+		'stats.grade.elementary': 'Primaire',
+		'stats.grade.middleSchool': 'Collège',
+		'stats.grade.highSchool': 'Lycée',
+		'stats.grade.college': 'Université',
+		'stats.avgWordsPerSentence': 'Moy. mots/phrase',
+		'stats.quality': 'Qualité d\'écriture',
+		'stats.hardSentences': 'Phrases difficiles',
+		'stats.veryHardSentences': 'Phrases très difficiles',
+		'stats.adverbs': 'Adverbes',
+		'stats.passiveVoice': 'Voix passive',
 	},
 	
 	es: {
@@ -634,6 +736,40 @@ export const translations = {
 		
 		// Editor extras
 		'editor.words': 'palabras',
+		
+		// Sidebar tabs
+		'sidebar.marginalia': 'Marginalia',
+		'sidebar.spellcheck': 'Ortografía y Gramática',
+		'sidebar.stats': 'Estadísticas',
+		'sidebar.tags': 'Etiquetas',
+		
+		// Text Statistics
+		'stats.counts': 'Recuentos',
+		'stats.words': 'Palabras',
+		'stats.characters': 'Caracteres',
+		'stats.sentences': 'Oraciones',
+		'stats.paragraphs': 'Párrafos',
+		'stats.time': 'Tiempo estimado',
+		'stats.readingTimeMin': 'Min. lectura',
+		'stats.speakingTimeMin': 'Min. habla',
+		'stats.readability': 'Legibilidad',
+		'stats.readability.veryEasy': 'Muy fácil',
+		'stats.readability.easy': 'Fácil',
+		'stats.readability.fairlyEasy': 'Bastante fácil',
+		'stats.readability.standard': 'Estándar',
+		'stats.readability.fairlyDifficult': 'Bastante difícil',
+		'stats.readability.difficult': 'Difícil',
+		'stats.readability.veryDifficult': 'Muy difícil',
+		'stats.grade.elementary': 'Primaria',
+		'stats.grade.middleSchool': 'Secundaria',
+		'stats.grade.highSchool': 'Bachillerato',
+		'stats.grade.college': 'Universidad',
+		'stats.avgWordsPerSentence': 'Prom. palabras/oración',
+		'stats.quality': 'Calidad de escritura',
+		'stats.hardSentences': 'Oraciones difíciles',
+		'stats.veryHardSentences': 'Oraciones muy difíciles',
+		'stats.adverbs': 'Adverbios',
+		'stats.passiveVoice': 'Voz pasiva',
 	},
 	
 	it: {
@@ -788,6 +924,40 @@ export const translations = {
 		
 		// Editor extras
 		'editor.words': 'parole',
+		
+		// Sidebar tabs
+		'sidebar.marginalia': 'Marginalia',
+		'sidebar.spellcheck': 'Ortografia e Grammatica',
+		'sidebar.stats': 'Statistiche',
+		'sidebar.tags': 'Tag',
+		
+		// Text Statistics
+		'stats.counts': 'Conteggi',
+		'stats.words': 'Parole',
+		'stats.characters': 'Caratteri',
+		'stats.sentences': 'Frasi',
+		'stats.paragraphs': 'Paragrafi',
+		'stats.time': 'Stima del tempo',
+		'stats.readingTimeMin': 'Min. lettura',
+		'stats.speakingTimeMin': 'Min. parlato',
+		'stats.readability': 'Leggibilità',
+		'stats.readability.veryEasy': 'Molto facile',
+		'stats.readability.easy': 'Facile',
+		'stats.readability.fairlyEasy': 'Abbastanza facile',
+		'stats.readability.standard': 'Standard',
+		'stats.readability.fairlyDifficult': 'Abbastanza difficile',
+		'stats.readability.difficult': 'Difficile',
+		'stats.readability.veryDifficult': 'Molto difficile',
+		'stats.grade.elementary': 'Elementare',
+		'stats.grade.middleSchool': 'Media',
+		'stats.grade.highSchool': 'Superiore',
+		'stats.grade.college': 'Università',
+		'stats.avgWordsPerSentence': 'Media parole/frase',
+		'stats.quality': 'Qualità scrittura',
+		'stats.hardSentences': 'Frasi difficili',
+		'stats.veryHardSentences': 'Frasi molto difficili',
+		'stats.adverbs': 'Avverbi',
+		'stats.passiveVoice': 'Voce passiva',
 	},
 } as const;
 

@@ -804,26 +804,10 @@ input, textarea, select {
 }
 
 /* ===========================================
-   SCROLLBAR STYLING
+   SCROLLBAR STYLING - Using browser defaults
    =========================================== */
 
-::-webkit-scrollbar {
-	width: 8px;
-	height: 8px;
-}
-
-::-webkit-scrollbar-track {
-	background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-	background: var(--color-border);
-	border-radius: var(--radius-full);
-}
-
-::-webkit-scrollbar-thumb:hover {
-	background: var(--color-border-strong);
-}
+/* Native scrollbars - no custom styling for consistency */
 
 /* ===========================================
    SELECTION STYLING
