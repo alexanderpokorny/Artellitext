@@ -10,6 +10,7 @@
 	import { browser } from '$app/environment';
 	import { createI18n } from '$stores/i18n.svelte';
 	import { analyzeText, extractTextFromBlocks, getEmptyStats, type TextStats } from '$lib/services/textAnalysis';
+	import { aiStore } from '$stores/ai.svelte';
 	import EditorSidebar from './EditorSidebar.svelte';
 	import TextStatsPanel from './TextStatsPanel.svelte';
 	import type { MarginaliaNote } from '$lib/types';
@@ -151,6 +152,56 @@
 		fullWidth = !fullWidth;
 	}
 	
+	// Dictation - Start/Stop speech recognition
+	async function toggleDictation() {
+		if (aiStore.isRecording) {
+			await aiStore.stopDictation();
+		} else {
+			// Get current language for transcription (first 2 chars)
+			const lang = i18n.language.substring(0, 2);
+			await aiStore.startDictation(
+				(text: string) => {
+					// Insert transcribed text into editor
+					insertTextAtCursor(text);
+				},
+				lang
+			);
+		}
+	}
+	
+	// Insert text at current cursor position in editor
+	async function insertTextAtCursor(text: string) {
+		if (!editor) return;
+		
+		try {
+			// Get current block index
+			const currentIndex = editor.blocks.getCurrentBlockIndex();
+			
+			if (currentIndex === -1) {
+				// No block selected, add new paragraph at end
+				await editor.blocks.insert('paragraph', { text });
+			} else {
+				// Get current block
+				const block = editor.blocks.getBlockByIndex(currentIndex);
+				if (block) {
+					// Get current content and append transcription
+					const blockData = await block.save();
+					if (blockData && blockData.data) {
+						const currentText = blockData.data.text || '';
+						const separator = currentText && !currentText.endsWith(' ') ? ' ' : '';
+						await editor.blocks.update(block.id, {
+							...blockData.data,
+							text: currentText + separator + text
+						});
+					}
+				}
+			}
+			notifyChange();
+		} catch (error) {
+			console.error('[EditorCore] Failed to insert transcribed text:', error);
+		}
+	}
+
 	// Add marginalia at click position in column
 	function handleMarginaliaColumnClick(e: MouseEvent) {
 		if (editingMarginaliaId) return;
@@ -595,6 +646,48 @@
 					{/if}
 				</span>
 				
+				<!-- Dictation button -->
+				{#if aiStore.isSupported}
+					<button 
+						type="button" 
+						class="header-btn dictation-btn"
+						class:recording={aiStore.isRecording}
+						class:processing={aiStore.isProcessing}
+						class:loading={aiStore.modelState === 'loading'}
+						onclick={toggleDictation}
+						disabled={aiStore.modelState === 'loading'}
+						title={aiStore.isRecording ? i18n.t('editor.stopDictation') : i18n.t('editor.startDictation')}
+						style={aiStore.isRecording ? `--audio-level: ${aiStore.audioLevel}` : ''}
+					>
+						{#if aiStore.modelState === 'loading'}
+							<!-- Loading spinner -->
+							<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+								<circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"/>
+							</svg>
+						{:else if aiStore.isRecording}
+							<!-- Recording indicator (filled circle) -->
+							<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none">
+								<circle cx="12" cy="12" r="6"/>
+							</svg>
+						{:else if aiStore.isProcessing}
+							<!-- Processing dots -->
+							<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none">
+								<circle cx="6" cy="12" r="2"/>
+								<circle cx="12" cy="12" r="2"/>
+								<circle cx="18" cy="12" r="2"/>
+							</svg>
+						{:else}
+							<!-- Microphone icon -->
+							<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+								<path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+								<line x1="12" y1="19" x2="12" y2="23"/>
+								<line x1="8" y1="23" x2="16" y2="23"/>
+							</svg>
+						{/if}
+					</button>
+				{/if}
+				
 				<!-- Full width toggle -->
 				<button 
 					type="button" 
@@ -1024,6 +1117,41 @@
 		color: var(--color-active);
 	}
 	
+	/* Dictation button styles */
+	.dictation-btn.recording {
+		color: var(--color-error);
+		animation: pulse-recording 1.5s ease-in-out infinite;
+	}
+	
+	.dictation-btn.processing {
+		color: var(--color-warning);
+	}
+	
+	.dictation-btn.loading {
+		color: var(--color-text-muted);
+		cursor: wait;
+	}
+	
+	.dictation-btn .spin {
+		animation: spin 1s linear infinite;
+	}
+	
+	@keyframes pulse-recording {
+		0%, 100% { 
+			opacity: 1;
+			transform: scale(1);
+		}
+		50% { 
+			opacity: 0.6;
+			transform: scale(1.1);
+		}
+	}
+	
+	@keyframes spin {
+		from { transform: rotate(0deg); }
+		to { transform: rotate(360deg); }
+	}
+
 	/* Body */
 	.editor-core-body {
 		display: grid;

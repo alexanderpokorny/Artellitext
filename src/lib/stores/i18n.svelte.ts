@@ -84,6 +84,9 @@ export const translations = {
 		'editor.expandWidth': 'Breite erweitern',
 		'editor.narrowWidth': 'Breite verkleinern',
 		'editor.fullWidthToggle': 'Volle Breite',
+		'editor.startDictation': 'Diktat starten',
+		'editor.stopDictation': 'Diktat beenden',
+		'editor.dictationLoading': 'Sprachmodell wird geladen...',
 		
 		// Literature
 		'literature.title': 'Bibliothek',
@@ -286,6 +289,9 @@ export const translations = {
 		'editor.expandWidth': 'Expand width',
 		'editor.narrowWidth': 'Narrow width',
 		'editor.fullWidthToggle': 'Full width',
+		'editor.startDictation': 'Start dictation',
+		'editor.stopDictation': 'Stop dictation',
+		'editor.dictationLoading': 'Loading speech model...',
 		
 		// Literature
 		'literature.title': 'Library',
@@ -488,6 +494,9 @@ export const translations = {
 		'editor.expandWidth': 'Élargir',
 		'editor.narrowWidth': 'Rétrécir',
 		'editor.fullWidthToggle': 'Pleine largeur',
+		'editor.startDictation': 'Démarrer la dictée',
+		'editor.stopDictation': 'Arrêter la dictée',
+		'editor.dictationLoading': 'Chargement du modèle vocal...',
 		
 		// Literature
 		'literature.title': 'Bibliothèque',
@@ -892,6 +901,9 @@ export const translations = {
 		'editor.expandWidth': 'Espandi larghezza',
 		'editor.narrowWidth': 'Riduci larghezza',
 		'editor.fullWidthToggle': 'Larghezza completa',
+		'editor.startDictation': 'Avvia dettatura',
+		'editor.stopDictation': 'Ferma dettatura',
+		'editor.dictationLoading': 'Caricamento modello vocale...',
 		
 		// Literature
 		'literature.title': 'Biblioteca',
