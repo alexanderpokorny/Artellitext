@@ -2,7 +2,71 @@
 
 > **Stand**: 28. Januar 2026  
 > **Quelle**: SaaS-Machbarkeitsanalyse PDF, Requirements.md, Konkurrenzanalyse  
-> **Format**: Für GitHub Projects optimiert (kann als Issues importiert werden)
+> **Format**: Für GitHub Projects optimiert – wird automatisch via `gh` CLI synchronisiert
+> **GitHub Project**: https://github.com/users/alexanderpokorny/projects/1
+
+---
+
+## Architektur-Prinzipien
+
+### Deployment-Strategie: Local-First → Serverless-Ready
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    LOCAL DEVELOPMENT                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │
+│  │   Docker    │  │  PostgreSQL │  │    MinIO    │              │
+│  │  Compose    │  │  + pgvector │  │    (S3)     │              │
+│  └─────────────┘  └─────────────┘  └─────────────┘              │
+│         │                │                │                      │
+│         └────────────────┴────────────────┘                      │
+│                          │                                       │
+│              ┌───────────▼───────────┐                          │
+│              │    SvelteKit App      │                          │
+│              │   (Node.js Adapter)   │                          │
+│              └───────────────────────┘                          │
+└─────────────────────────────────────────────────────────────────┘
+                           │
+                           │ Portable zu:
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    SERVERLESS (Scaleway/Vercel)                  │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │
+│  │   Vercel/   │  │  Neon/      │  │  Scaleway   │              │
+│  │  Coolify    │  │  Supabase   │  │  Object     │              │
+│  │             │  │  PostgreSQL │  │  Storage    │              │
+│  └─────────────┘  └─────────────┘  └─────────────┘              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Client-Side AI: Transformers.js + Whisper WebGPU
+
+**NEU**: Lokale KI-Inferenz ohne Backend via Hugging Face Transformers.js
+
+- **Whisper WebGPU**: Speech-to-Text komplett im Browser (V8 + WebGPU)
+- **ONNX Runtime**: PyTorch-Modelle konvertiert für WASM/WebGPU
+- **Modelle**: `whisper-base`, `whisper-small`, `distil-whisper` (quantisiert)
+- **Vorteil**: Kein Server, keine API-Kosten, volle Datensouveränität
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    BROWSER (Client-Side AI)                      │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │                 Transformers.js                              ││
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         ││
+│  │  │   Whisper   │  │  Embedding  │  │    Text     │         ││
+│  │  │   (STT)     │  │   Models    │  │  Generation │         ││
+│  │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘         ││
+│  │         │                │                │                 ││
+│  │         └────────────────┴────────────────┘                 ││
+│  │                          │                                   ││
+│  │              ┌───────────▼───────────┐                      ││
+│  │              │   WebGPU / WASM       │                      ││
+│  │              │   (GPU Acceleration)  │                      ││
+│  │              └───────────────────────┘                      ││
+│  └─────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -114,15 +178,41 @@
 
 ---
 
-## Epic 3: KI-Integration (BYOK)
+## Epic 3: KI-Integration (BYOK + Client-Side)
 
-### 3.1 Infrastruktur
+### 3.0 Client-Side AI (Transformers.js) – NEU
 | ID | Feature | Priorität | Status | Labels |
 |----|---------|-----------|--------|--------|
-| AI-001 | KI-Proxy Endpunkt mit SSE | 🔴 P0 | ⬜ | `ai`, `api` |
-| AI-002 | API-Key Verwaltung (verschlüsselt) | 🔴 P0 | ⬜ | `ai`, `database`, `security` |
-| AI-003 | Model Registry UI (OpenAI, Anthropic, OpenRouter) | 🔴 P0 | ⬜ | `ai`, `ui` |
-| AI-004 | Rate Limiting für KI-Calls | 🟠 P1 | ⬜ | `ai`, `security` |
+| AI-C01 | Transformers.js Integration Setup | 🔴 P0 | ⬜ | `ai`, `infrastructure` |
+| AI-C02 | Whisper WebGPU Speech-to-Text | 🔴 P0 | ⬜ | `ai`, `editor` |
+| AI-C03 | Modell-Download & Caching (IndexedDB) | 🔴 P0 | ⬜ | `ai`, `offline` |
+| AI-C04 | WebGPU Feature Detection & Fallback | 🟠 P1 | ⬜ | `ai`, `infrastructure` |
+| AI-C05 | Whisper Modell-Auswahl (base/small/distil) | 🟠 P1 | ⬜ | `ai`, `ui` |
+| AI-C06 | Client-Side Embeddings (Semantic Search) | 🟠 P1 | ⬜ | `ai`, `search` |
+| AI-C07 | Diktat-Modus für Editor | 🟠 P1 | ⬜ | `ai`, `editor` |
+| AI-C08 | Progress-Anzeige bei Modell-Download | 🟠 P1 | ⬜ | `ai`, `ui` |
+| AI-C09 | Transkription mit Zeitstempeln | 🟡 P2 | ⬜ | `ai`, `editor` |
+| AI-C10 | Multi-Language Whisper (de/en/fr/es) | 🟡 P2 | ⬜ | `ai`, `i18n` |
+
+**Akzeptanzkriterien AI-C01**:
+- [ ] `@xenova/transformers` npm Package integriert
+- [ ] ONNX Models werden in IndexedDB gecacht
+- [ ] Inferenz läuft in Web Worker (kein UI-Blocking)
+- [ ] WebGPU priorisiert, WASM als Fallback
+
+**Akzeptanzkriterien AI-C02**:
+- [ ] Audio-Aufnahme via MediaRecorder API
+- [ ] Whisper-Modell lädt bei erstem Aufruf
+- [ ] Transkription erfolgt in < 2s (für kurze Clips)
+- [ ] Funktioniert komplett offline nach Modell-Download
+
+### 3.1 Server-Side KI (BYOK)
+| ID | Feature | Priorität | Status | Labels |
+|----|---------|-----------|--------|--------|
+| AI-001 | KI-Proxy Endpunkt mit SSE | 🟠 P1 | ⬜ | `ai`, `api` |
+| AI-002 | API-Key Verwaltung (verschlüsselt) | 🟠 P1 | ⬜ | `ai`, `database`, `security` |
+| AI-003 | Model Registry UI (OpenAI, Anthropic, OpenRouter) | 🟠 P1 | ⬜ | `ai`, `ui` |
+| AI-004 | Rate Limiting für KI-Calls | 🟡 P2 | ⬜ | `ai`, `security` |
 
 **Akzeptanzkriterien AI-001**:
 - [ ] SSE (Server-Sent Events) für Streaming
@@ -329,28 +419,73 @@
 
 ---
 
+## Epic 10: Infrastructure & DevOps
+
+### 10.1 Local Development (Docker)
+| ID | Feature | Priorität | Status | Labels |
+|----|---------|-----------|--------|--------|
+| INF-001 | Docker Compose Setup (Postgres + MinIO) | 🔴 P0 | ⬜ | `infrastructure`, `devops` |
+| INF-002 | PostgreSQL 17 + pgvector Container | 🔴 P0 | ⬜ | `infrastructure`, `database` |
+| INF-003 | MinIO S3-kompatibles Storage | 🔴 P0 | ⬜ | `infrastructure`, `storage` |
+| INF-004 | Dev Database Seeding Script | 🟠 P1 | ⬜ | `infrastructure`, `devops` |
+| INF-005 | Hot Reload für alle Services | 🟠 P1 | ⬜ | `infrastructure`, `devops` |
+
+**Akzeptanzkriterien INF-001**:
+- [ ] `docker-compose up` startet alle Services
+- [ ] Volumes für persistente Daten
+- [ ] .env.example mit allen Variablen
+- [ ] Health Checks für alle Container
+
+### 10.2 Serverless Portability
+| ID | Feature | Priorität | Status | Labels |
+|----|---------|-----------|--------|--------|
+| INF-010 | Environment-agnostische DB-Connection | 🔴 P0 | ⬜ | `infrastructure`, `database` |
+| INF-011 | S3-kompatible Storage Abstraktion | 🔴 P0 | ⬜ | `infrastructure`, `storage` |
+| INF-012 | Coolify Deployment Config | 🟠 P1 | ⬜ | `infrastructure`, `devops` |
+| INF-013 | Scaleway Serverless Config | 🟡 P2 | ⬜ | `infrastructure`, `devops` |
+| INF-014 | Neon PostgreSQL Migration Guide | 🟡 P2 | ⬜ | `infrastructure`, `database` |
+| INF-015 | Vercel Edge Adapter | 🟡 P2 | ⬜ | `infrastructure`, `devops` |
+
+**Akzeptanzkriterien INF-010**:
+- [ ] `DATABASE_URL` als einzige Konfiguration
+- [ ] Automatische SSL-Erkennung
+- [ ] Connection Pooling (PgBouncer-kompatibel)
+- [ ] Migrations laufen auf beiden Targets
+
+### 10.3 CI/CD
+| ID | Feature | Priorität | Status | Labels |
+|----|---------|-----------|--------|--------|
+| INF-020 | GitHub Actions: Build & Test | 🟠 P1 | ⬜ | `infrastructure`, `ci` |
+| INF-021 | GitHub Actions: Deploy to Coolify | 🟠 P1 | ⬜ | `infrastructure`, `cd` |
+| INF-022 | Database Migration CI Check | 🟠 P1 | ⬜ | `infrastructure`, `database` |
+| INF-023 | E2E Tests mit Playwright | 🟡 P2 | ⬜ | `infrastructure`, `testing` |
+
+---
+
 ## Zusammenfassung nach Priorität
 
-### P0 – MVP Kritisch (20 Features)
+### P0 – MVP Kritisch (30 Features)
 Must-have für ein funktionierendes Produkt:
-- PDF.js Basis, Text-Layer, Rendering
-- LaTeX Blöcke
-- Citation.js + Literaturverzeichnis
-- KI-Proxy mit SSE + API-Key Verwaltung
-- IndexedDB + Sync-Queue
-- S3 Integration + File Upload
-- API-Key Verschlüsselung
+- **Reader**: PDF.js Basis, Text-Layer, Rendering
+- **Editor**: LaTeX Blöcke, Citation.js + Literaturverzeichnis
+- **Client-Side AI**: Transformers.js Setup, Whisper WebGPU, Modell-Caching
+- **Offline**: IndexedDB + Sync-Queue
+- **Storage**: S3/MinIO Integration + File Upload
+- **Security**: API-Key Verschlüsselung
+- **Infrastructure**: Docker Compose, DB/S3 Abstraktionen
 
-### P1 – Core Features (45 Features)
+### P1 – Core Features (55 Features)
 Notwendig für Wettbewerbsfähigkeit:
 - EPUB Reader komplett
 - Mermaid, Marginalien, Fußnoten
-- Sokratischer Modus, Text-Assistenz
+- Client-Side Embeddings, Diktat-Modus
+- Sokratischer Modus, Text-Assistenz (Server-Side BYOK)
 - pgvector Semantic Search
 - Offline Caching Strategie
 - Thumbnail-Generierung
 - Grid/Listen-Ansichten
 - Passwort-Reset, E-Mail-Verifizierung
+- CI/CD Pipeline
 
 ### P2 – Enhancements (35 Features)
 Verbessern das Produkt signifikant:
