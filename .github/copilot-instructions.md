@@ -63,6 +63,22 @@ Vor jeder Änderung prüfen:
 2. „Wurde diese Änderung explizit angefordert?"
 3. Falls Zweifel: **Rückfrage stellen, nicht handeln**
 
+### Beim Ersetzen ganzer Komponenten (PFLICHT)
+> **KRITISCH**: Wenn eine komplette Komponente ersetzt oder refactored wird:
+
+1. **Inventar erstellen**: VOR dem Ersetzen alle bestehenden Features der Komponente dokumentieren
+2. **Feature-Parität garantieren**: ALLE bestehenden Features müssen in der neuen Version funktionieren
+3. **Keine stillen Verluste**: Wenn ein Feature nicht 1:1 übernommen werden kann, explizit nachfragen
+4. **Testen durch Vergleich**: Nach dem Ersetzen gegen das Original-Verhalten prüfen
+
+**Checkliste vor Komponenten-Ersetzung:**
+- [ ] Alle Event-Handler identifiziert und übernommen
+- [ ] Alle CSS-Klassen und Styling erhalten
+- [ ] Alle Props/States/Bindings funktionsfähig
+- [ ] Alle Sub-Komponenten korrekt eingebunden
+- [ ] Positionierung und Layout identisch
+- [ ] Interaktive Elemente (Menüs, Dialoge) funktionsfähig
+
 ## 2. Ausführungsprinzip: Vollständigkeit
 
 ### Alle Anweisungen in einem Prompt ausführen

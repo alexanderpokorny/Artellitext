@@ -82,12 +82,8 @@
 
 <style>
 	.editor-fullscreen-page {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		z-index: var(--z-modal);
+		height: calc(100vh - var(--header-height) - var(--status-bar-height));
+		margin: calc(-1 * var(--site-padding));
 		background: var(--color-bg);
 	}
 	

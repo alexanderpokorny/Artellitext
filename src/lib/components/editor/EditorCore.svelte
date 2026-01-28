@@ -111,16 +111,6 @@
 			tooltipKey: 'sidebar.references',
 		},
 		{
-			id: 'tags',
-			icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
-			tooltipKey: 'sidebar.tags',
-		},
-		{
-			id: 'references',
-			icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
-			tooltipKey: 'sidebar.references',
-		},
-		{
 			id: 'stats',
 			icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>',
 			tooltipKey: 'sidebar.stats',
@@ -263,16 +253,18 @@
 		await tick();
 		
 		const blocks = editorContainer.querySelectorAll('.ce-block');
-		const editorMain = editorContainer.closest('.editor-main');
-		if (!editorMain) return;
+		const editorBody = editorContainer.closest('.editor-core-body');
+		if (!editorBody) return;
 		
-		const editorMainRect = editorMain.getBoundingClientRect();
+		// Get the scroll offset of the body - we need positions relative to the scrolling container
+		const editorBodyRect = editorBody.getBoundingClientRect();
+		const scrollTop = editorBody.scrollTop;
 		const positions = new Map<string, number>();
 		
 		blocks.forEach((block, index) => {
 			const blockRect = block.getBoundingClientRect();
-			// Calculate relative to editor-main, which shares scroll with marginalia
-			const relativeTop = blockRect.top - editorMainRect.top;
+			// Calculate position relative to the body's content, accounting for scroll
+			const relativeTop = blockRect.top - editorBodyRect.top + scrollTop;
 			const editorBlock = editor.blocks.getBlockByIndex(index);
 			const blockId = editorBlock?.id || `block-${index}`;
 			positions.set(blockId, relativeTop);

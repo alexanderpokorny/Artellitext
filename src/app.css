@@ -2611,17 +2611,21 @@ html.high-contrast .tag {
 .ce-toolbox {
 	left: 0 !important;
 	transform: translateX(0) !important;
-	z-index: 100 !important;
+	z-index: 1000 !important;
+	position: absolute !important;
 }
 
 /* Ensure toolbox appears properly on slash trigger */
 .ce-toolbox--opened {
 	left: 0 !important;
-	z-index: 100 !important;
+	z-index: 1000 !important;
 	background: var(--color-bg-elevated);
 	border: 1px solid var(--color-border);
 	border-radius: var(--radius-md);
 	box-shadow: var(--shadow-lg);
+	display: flex !important;
+	visibility: visible !important;
+	opacity: 1 !important;
 }
 
 /* Style the toolbox for better readability */
@@ -2693,10 +2697,20 @@ html.high-contrast .tag {
 .ce-block__content,
 .ce-block--focused,
 .ce-block--selected,
-.ce-block--dragging {
+.ce-block--dragging,
+.ce-paragraph,
+.ce-block [contenteditable],
+.ce-block [contenteditable]:focus,
+.ce-block [contenteditable]:focus-visible,
+.codex-editor__redactor {
 	border: none !important;
 	outline: none !important;
 	box-shadow: none !important;
+}
+
+/* Also target any nested elements */
+.ce-block * {
+	outline: none !important;
 }
 
 .ce-block--dragging {
