@@ -107,6 +107,15 @@ export interface EditorBlock {
 	data: Record<string, unknown>;
 }
 
+export interface MarginaliaNote {
+	id: string;
+	blockId: string;
+	content: string;
+	top: number;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
 export type ContentStatus = 'draft' | 'published' | 'archived';
 
 export type ContentLanguage = 'de' | 'en' | 'fr' | 'es' | 'it' | 'mu';

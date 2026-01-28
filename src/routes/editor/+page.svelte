@@ -5,9 +5,11 @@
 -->
 
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { browser } from '$app/environment';
 	import { createI18n } from '$stores/i18n.svelte';
+	import Marginalia from '$lib/components/editor/Marginalia.svelte';
+	import type { MarginaliaNote } from '$lib/types';
 	import type { PageData } from './$types';
 	
 	const { } = $props<{ data: PageData }>();
@@ -26,9 +28,61 @@
 	let showReferencePanel = $state(false);
 	let isFullscreen = $state(false);
 	
+	// Marginalia state
+	let marginalia = $state<MarginaliaNote[]>([]);
+	let marginaliaComponent: Marginalia;
+	
 	// Toggle fullscreen mode
 	function toggleFullscreen() {
 		isFullscreen = !isFullscreen;
+	}
+	
+	// Add marginalia for current block
+	async function addMarginaliaForCurrentBlock() {
+		if (!editor) return;
+		
+		const currentBlockIndex = editor.blocks.getCurrentBlockIndex();
+		if (currentBlockIndex < 0) return;
+		
+		// Get the block element to determine position
+		const blocks = editorContainer.querySelectorAll('.ce-block');
+		const currentBlock = blocks[currentBlockIndex] as HTMLElement;
+		
+		if (currentBlock && marginaliaComponent) {
+			const blockRect = currentBlock.getBoundingClientRect();
+			const containerRect = editorContainer.getBoundingClientRect();
+			const relativeTop = blockRect.top - containerRect.top + editorContainer.scrollTop;
+			
+			// Get block ID from Editor.js
+			const blockId = editor.blocks.getBlockByIndex(currentBlockIndex)?.id || `block-${currentBlockIndex}`;
+			
+			marginaliaComponent.addNote(blockId, relativeTop);
+			saveStatus = 'unsaved';
+		}
+	}
+	
+	// Sync marginalia positions with editor blocks
+	async function syncMarginaliaPositions() {
+		if (!editor || !editorContainer || !marginaliaComponent) return;
+		
+		await tick();
+		
+		const blocks = editorContainer.querySelectorAll('.ce-block');
+		const containerRect = editorContainer.getBoundingClientRect();
+		const positions = new Map<string, number>();
+		
+		blocks.forEach((block, index) => {
+			const blockEl = block as HTMLElement;
+			const blockRect = blockEl.getBoundingClientRect();
+			const relativeTop = blockRect.top - containerRect.top + editorContainer.scrollTop;
+			
+			// Try to get block ID from Editor.js
+			const editorBlock = editor.blocks.getBlockByIndex(index);
+			const blockId = editorBlock?.id || `block-${index}`;
+			positions.set(blockId, relativeTop);
+		});
+		
+		marginaliaComponent.syncPositions(positions);
 	}
 	
 	// Initialize Editor.js on mount
@@ -112,8 +166,13 @@
 				onChange: async () => {
 					saveStatus = 'unsaved';
 					updateWordCount();
+					// Sync marginalia positions when blocks change
+					syncMarginaliaPositions();
 				},
 			});
+			
+			// Initial sync after editor is ready
+			setTimeout(syncMarginaliaPositions, 500);
 		};
 		
 		initEditor();
@@ -167,7 +226,7 @@
 		try {
 			const content = await editor.save();
 			
-			// Send to server
+			// Send to server (including marginalia)
 			const response = await fetch('/api/notes', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -175,6 +234,7 @@
 					title,
 					content,
 					tags,
+					marginalia,
 				}),
 			});
 			
@@ -288,10 +348,6 @@
 				{/if}
 			</button>
 			
-			<button type="button" class="btn btn-primary" onclick={save}>>
-				{i18n.t('editor.references')}
-			</button>
-			
 			<button type="button" class="btn btn-primary" onclick={save}>
 				{i18n.t('action.save')}
 			</button>
@@ -301,7 +357,25 @@
 	<div class="editor-layout">
 		<!-- Marginalia column (left) -->
 		<aside class="marginalia-column">
-			<!-- Marginalien would be rendered here -->
+			<div class="marginalia-header">
+				<h3 class="section-label">{i18n.t('editor.marginalia')}</h3>
+				<button 
+					type="button" 
+					class="add-marginalia-btn"
+					onclick={addMarginaliaForCurrentBlock}
+					title={i18n.t('editor.addMarginalia')}
+					aria-label={i18n.t('editor.addMarginalia')}
+				>
+					<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+						<line x1="12" y1="5" x2="12" y2="19"/>
+						<line x1="5" y1="12" x2="19" y2="12"/>
+					</svg>
+				</button>
+			</div>
+			<Marginalia 
+				bind:this={marginaliaComponent}
+				bind:marginalia={marginalia}
+			/>
 		</aside>
 		
 		<!-- Main editor -->
@@ -506,9 +580,40 @@
 	}
 	
 	.marginalia-column {
-		padding: var(--space-6) var(--space-4);
+		padding: var(--space-4);
 		border-right: 1px solid var(--color-border-subtle);
 		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
+	}
+	
+	/* Marginalia header */
+	.marginalia-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: var(--space-3);
+		padding-bottom: var(--space-2);
+		border-bottom: 1px solid var(--color-border-subtle);
+	}
+	
+	.add-marginalia-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 24px;
+		height: 24px;
+		background: transparent;
+		border: none;
+		border-radius: var(--radius-sm);
+		color: var(--color-text-muted);
+		cursor: pointer;
+		transition: all var(--transition-fast);
+	}
+	
+	.add-marginalia-btn:hover {
+		color: var(--color-text);
+		background: var(--color-bg-sunken);
 	}
 	
 	.editor-main {

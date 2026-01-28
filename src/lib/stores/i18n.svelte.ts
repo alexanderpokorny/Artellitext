@@ -77,6 +77,7 @@ export const translations = {
 		'editor.addTag': 'Tag hinzufügen',
 		'editor.references': 'Referenzen',
 		'editor.marginalia': 'Marginalie',
+		'editor.addMarginalia': 'Marginalie hinzufügen',
 		'editor.fullscreen': 'Vollbild',
 		'editor.exitFullscreen': 'Vollbild beenden',
 		
@@ -208,6 +209,7 @@ export const translations = {
 		'editor.addTag': 'Add tag',
 		'editor.references': 'References',
 		'editor.marginalia': 'Marginalia',
+		'editor.addMarginalia': 'Add marginalia',
 		'editor.fullscreen': 'Fullscreen',
 		'editor.exitFullscreen': 'Exit fullscreen',
 		
@@ -339,6 +341,7 @@ export const translations = {
 		'editor.addTag': 'Ajouter un tag',
 		'editor.references': 'Références',
 		'editor.marginalia': 'Marginalia',
+		'editor.addMarginalia': 'Ajouter marginalia',
 		'editor.fullscreen': 'Plein écran',
 		'editor.exitFullscreen': 'Quitter le plein écran',
 		
@@ -470,6 +473,7 @@ export const translations = {
 		'editor.addTag': 'Añadir etiqueta',
 		'editor.references': 'Referencias',
 		'editor.marginalia': 'Marginalia',
+		'editor.addMarginalia': 'Añadir marginalia',
 		'editor.fullscreen': 'Pantalla completa',
 		'editor.exitFullscreen': 'Salir de pantalla completa',
 		
@@ -601,6 +605,7 @@ export const translations = {
 		'editor.addTag': 'Aggiungi tag',
 		'editor.references': 'Riferimenti',
 		'editor.marginalia': 'Marginalia',
+		'editor.addMarginalia': 'Aggiungi marginalia',
 		'editor.fullscreen': 'Schermo intero',
 		'editor.exitFullscreen': 'Esci da schermo intero',
 		
