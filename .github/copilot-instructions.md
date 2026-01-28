@@ -301,10 +301,61 @@ sudo docker exec pgvector-db psql -U postgres -d Artellitext -c "SELECT column_n
 - Code-Kommentare nach Projektkonvention (meist Englisch)
 - Commit-Messages nach Projektkonvention
 
-## Zusammenfassung: Die 5 goldenen Regeln
+## 13. GitHub Project & Issue-Tracking (PFLICHT)
+
+### Änderungen im Projekt erfassen
+> **KRITISCH**: Alle Änderungen werden im GitHub Project dokumentiert.
+
+**Workflow bei jeder Änderung:**
+1. Prüfen, ob ein passendes Issue existiert
+2. Falls nicht: Issue erstellen mit `gh issue create`
+3. Bei komplexen Features: Sub-Issues oder Checklisten anlegen
+4. Issue-Nummer in Commit-Message referenzieren
+
+### Commit-Messages mit Issue-Referenz
+```bash
+# Format:
+git commit -m "feat: Feature-Beschreibung #123"
+git commit -m "fix: Bugfix-Beschreibung (closes #456)"
+
+# Mehrere Issues:
+git commit -m "feat: Feature XYZ #123 #124"
+```
+
+### Issue-Erstellung via CLI
+```bash
+# Einfaches Issue:
+gh issue create --title "[PREFIX] Titel" --label "P1-high,editor" --body "Beschreibung"
+
+# Issue zum Project hinzufügen:
+gh project item-add 1 --owner alexanderpokorny --url "https://github.com/alexanderpokorny/Artellitext/issues/XX"
+
+# Priority setzen (P0/P1/P2):
+gh project item-edit --project-id PVT_kwHOAPwPQ84BAP7z --id ITEM_ID --field-id PVTSSF_lAHOAPwPQ84BAP7zzgzHCBU --single-select-option-id OPTION_ID
+```
+
+### Issue-Prefixes nach Bereich
+| Prefix | Bereich | Beispiel |
+|--------|---------|----------|
+| `[INF-XXX]` | Infrastructure | Docker, CI/CD |
+| `[E-XXX]` | Editor | Blöcke, Tools |
+| `[R-XXX]` | Reader | PDF, EPUB |
+| `[AI-XXX]` | KI-Features | Transformers.js, BYOK |
+| `[AI-E0X]` | Epistemische KI | Sokratisch, Reviewer 2 |
+| `[PWA-XXX]` | Offline/PWA | IndexedDB, Sync |
+| `[UI-XXX]` | UI/UX | Layout, Mobile |
+| `[SEC-XXX]` | Security | Auth, GDPR |
+
+### Bei jedem Prompt prüfen
+1. Welche Issues sind betroffen?
+2. Sind Sub-Tasks nötig?
+3. Commit-Message mit Referenz vorbereiten
+
+## Zusammenfassung: Die 6 goldenen Regeln
 
 1. **Nicht eigenmächtig ändern** – Nur tun, was angefordert ist
 2. **Funktionierende Features nicht anfassen** – Bei Zweifeln: Rückfrage
 3. **Theming und i18n immer bedenken** – Keine Hardcodings
 4. **Offline-First denken** – Lokaler Cache vor Remote
 5. **Dokumentieren, was relevant ist** – Aber nicht überdokumentieren
+6. **Issue-Referenzen in Commits** – Änderungen immer im Project tracken

@@ -145,10 +145,82 @@
 | E-013 | Code Block mit Syntax Highlighting | 🟠 P1 | ⬜ | `editor` |
 | E-014 | Bild-Upload & Einbettung | 🟠 P1 | ⬜ | `editor`, `storage` |
 | E-015 | Video-Embed (YouTube, Vimeo) | 🟡 P2 | ⬜ | `editor` |
-| E-016 | Excalidraw Embed | 🟡 P2 | ⬜ | `editor`, `diagrams` |
+| E-016 | Excalidraw Embed | � P1 | ⬜ | `editor`, `diagrams` |
 | E-017 | Draw.io Embed | 🟡 P2 | ⬜ | `editor`, `diagrams` |
 | E-018 | PlantUML Block | 🟢 P3 | ⬜ | `editor`, `diagrams` |
 | E-019 | Custom HTML Block (JS-sanitized) | 🟢 P3 | ⬜ | `editor`, `security` |
+
+### 2.5 Inline Drawings (Canvas)
+| ID | Feature | Priorität | Status | Labels |
+|----|---------|-----------|--------|--------|
+| E-050 | Canvas Drawing Block | 🟠 P1 | ⬜ | `editor`, `diagrams` |
+| E-051 | Freihand-Zeichnung im Block | 🟠 P1 | ⬜ | `editor`, `diagrams` |
+| E-052 | Stift-/Marker-/Radierer-Tools | 🟠 P1 | ⬜ | `editor`, `ui` |
+| E-053 | Farb- und Strichstärken-Auswahl | 🟠 P1 | ⬜ | `editor`, `ui` |
+| E-054 | Export als SVG/PNG | 🟡 P2 | ⬜ | `editor`, `export` |
+| E-055 | Excalidraw-Integration (vollständig) | 🟠 P1 | ⬜ | `editor`, `diagrams` |
+| E-056 | Touch/Stylus-Unterstützung | 🟠 P1 | ⬜ | `editor`, `mobile` |
+
+**Akzeptanzkriterien E-050**:
+- [ ] Canvas-Element als Editor.js Block
+- [ ] Speicherung als Base64 oder SVG in Block-Data
+- [ ] Responsive Darstellung bei Wiedergabe
+- [ ] Dark/Light Mode Support für Zeichnung
+
+### 2.6 Textanalyse & Metriken (Hemingway-Style)
+| ID | Feature | Priorität | Status | Labels |
+|----|---------|-----------|--------|--------|
+| E-060 | Basis-Textmetriken (Wörter/Zeichen/Sätze) | 🟠 P1 | ⬜ | `editor`, `analysis` |
+| E-061 | Lesezeit-Berechnung | 🟠 P1 | ⬜ | `editor`, `analysis` |
+| E-062 | Lesbarkeits-Index (Flesch-Reading-Ease) | 🟠 P1 | ⬜ | `editor`, `analysis` |
+| E-063 | Lesestufen-Zuordnung (Bildungsstufen) | 🟠 P1 | ⬜ | `editor`, `analysis` |
+| E-064 | Hemingway-Style Highlighting | 🟠 P1 | ⬜ | `editor`, `analysis`, `ui` |
+| E-065 | Schwierige Sätze markieren | 🟠 P1 | ⬜ | `editor`, `analysis` |
+| E-066 | Adverb-Warnung | 🟡 P2 | ⬜ | `editor`, `analysis` |
+| E-067 | Passiv-Konstruktionen erkennen | 🟡 P2 | ⬜ | `editor`, `analysis` |
+| E-068 | Lesbarkeits-Modell Auswahl (wie Zettlr) | 🟠 P1 | ⬜ | `editor`, `analysis`, `settings` |
+| E-069 | Sprachniveau A1-C2 (GER) | 🟡 P2 | ⬜ | `editor`, `analysis`, `i18n` |
+| E-070 | Metriken-Panel Toggle | 🟠 P1 | ⬜ | `editor`, `ui` |
+
+**Akzeptanzkriterien E-062 (Lesbarkeits-Index)**:
+- [ ] Flesch-Reading-Ease für Deutsch (Amstad-Formel)
+- [ ] Flesch-Kincaid für Englisch (US)
+- [ ] Wiener Sachtextformel für Österreichisches Deutsch
+- [ ] Modell-Auswahl in Settings
+
+**Lesbarkeits-Modelle (E-068)**:
+
+| Modell | Sprache | Formel | Anwendung |
+|--------|---------|--------|----------|
+| Flesch-Reading-Ease (DE) | Deutsch | Amstad-Formel | Standard DE |
+| Flesch-Kincaid Grade | Englisch | US-Standard | Schuljahre US |
+| Wiener Sachtextformel | Deutsch (AT) | 4 Varianten | Wissenschaft AT |
+| LIX | Universal | Björnsson | Skandinavisch/International |
+| SMOG | Englisch | McLaughlin | Medizinische Texte |
+| Gunning-Fog | Englisch | Gunning | Business-Texte |
+
+**Lesestufen-Zuordnung (E-063)**:
+
+| Score-Bereich | DE Bildungsstufe | AT Bildungsstufe | US Grade Level | Verständliche Beschreibung |
+|---------------|------------------|------------------|----------------|----------------------------|
+| 90-100 | Grundschule (1-4) | Volksschule | 5th Grade | Sehr leicht - 10-Jährige |
+| 80-89 | Unterstufe (5-6) | Unterstufe Gym | 6th Grade | Leicht - 11-12-Jährige |
+| 70-79 | Mittelstufe (7-8) | 3.-4. Klasse AHS | 7th-8th Grade | Durchschnittlich - 13-14-Jährige |
+| 60-69 | Oberstufe (9-10) | 5.-6. Klasse AHS | 9th-10th Grade | Etwas schwierig - 15-16-Jährige |
+| 50-59 | Abitur/Matura | 7.-8. Klasse AHS | 11th-12th Grade | Schwierig - Maturanten |
+| 30-49 | Hochschule | Universität | College | Akademisch - Studierende |
+| 0-29 | Wissenschaftlich | Wissenschaftlich | Graduate | Sehr schwierig - Fachpublikum |
+
+**Sprachniveau GER (E-069)**:
+
+| GER-Stufe | Beschreibung | Typische Merkmale |
+|-----------|--------------|-------------------|
+| A1 | Anfänger | Einfache Sätze, Grundwortschatz (~500 Wörter) |
+| A2 | Grundlegend | Alltägliche Ausdrücke, einfache Zusammenhänge |
+| B1 | Mittelstufe | Standardsprache, bekannte Themen |
+| B2 | Gute Mittelstufe | Komplexe Texte, abstrakte Themen |
+| C1 | Fortgeschritten | Implizite Bedeutungen, akademische Texte |
+| C2 | Annähernd Muttersprachlich | Nuancen, Fachsprache, Stilistik |
 
 **Akzeptanzkriterien E-010**:
 - [ ] KaTeX oder MathJax für LaTeX-Rendering
