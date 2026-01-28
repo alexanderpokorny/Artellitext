@@ -73,10 +73,17 @@
 	
 	// Sidebar tab state
 	let leftTab = $state<'marginalia' | 'spellcheck'>('marginalia');
-	let rightTab = $state<'stats' | 'tags'>('stats');
+	let rightTab = $state<'tags' | 'references' | 'stats'>('tags');
 	
 	// Text statistics
 	let textStats = $state<TextStats>(getEmptyStats());
+	
+	// Reference Import/Export State
+	let showReferenceDialog = $state(false);
+	let referenceDialogMode = $state<'import' | 'export'>('import');
+	let referenceFormat = $state<'bibtex' | 'csv' | 'excel'>('bibtex');
+	let _referenceFileInput = $state<HTMLInputElement | undefined>(undefined);
+	let importedReferences = $state<any[]>([]);
 	
 	// Tab configurations
 	const leftTabs = [
@@ -94,14 +101,29 @@
 	
 	const rightTabs = [
 		{
-			id: 'stats',
-			icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>',
-			tooltipKey: 'sidebar.stats',
+			id: 'tags',
+			icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+			tooltipKey: 'sidebar.tags',
+		},
+		{
+			id: 'references',
+			icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+			tooltipKey: 'sidebar.references',
 		},
 		{
 			id: 'tags',
 			icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
 			tooltipKey: 'sidebar.tags',
+		},
+		{
+			id: 'references',
+			icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+			tooltipKey: 'sidebar.references',
+		},
+		{
+			id: 'stats',
+			icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>',
+			tooltipKey: 'sidebar.stats',
 		},
 	];
 	
@@ -143,25 +165,26 @@
 	function handleMarginaliaColumnClick(e: MouseEvent) {
 		if (editingMarginaliaId) return;
 		if ((e.target as HTMLElement).closest('.marginalia-note')) return;
-		if (!marginaliaColumn) return;
+		if (!marginaliaColumn || !editorContainer) return;
 		
-		const rect = marginaliaColumn.getBoundingClientRect();
-		const clickY = e.clientY - rect.top + marginaliaColumn.scrollTop;
+		// Get the editor-main element which is the scroll container
+		const editorMain = editorContainer.closest('.editor-main');
+		if (!editorMain) return;
+		
+		const editorMainRect = editorMain.getBoundingClientRect();
+		const clickY = e.clientY - editorMainRect.top;
 		
 		let blockId = 'block-0';
-		if (editor && editorContainer) {
-			const blocks = editorContainer.querySelectorAll('.ce-block');
-			const containerRect = editorContainer.getBoundingClientRect();
-			
-			blocks.forEach((block, index) => {
-				const blockRect = block.getBoundingClientRect();
-				const relativeTop = blockRect.top - containerRect.top + editorContainer!.scrollTop;
-				if (clickY >= relativeTop) {
-					const editorBlock = editor.blocks.getBlockByIndex(index);
-					blockId = editorBlock?.id || `block-${index}`;
-				}
-			});
-		}
+		const blocks = editorContainer.querySelectorAll('.ce-block');
+		
+		blocks.forEach((block, index) => {
+			const blockRect = block.getBoundingClientRect();
+			const relativeTop = blockRect.top - editorMainRect.top;
+			if (clickY >= relativeTop) {
+				const editorBlock = editor?.blocks.getBlockByIndex(index);
+				blockId = editorBlock?.id || `block-${index}`;
+			}
+		});
 		
 		const newNote: MarginaliaNote = {
 			id: crypto.randomUUID(),
@@ -214,10 +237,13 @@
 	}
 	
 	function handleMarginaliaDrag(e: MouseEvent) {
-		if (!draggingMarginaliaId || !marginaliaColumn) return;
+		if (!draggingMarginaliaId || !editorContainer) return;
 		
-		const rect = marginaliaColumn.getBoundingClientRect();
-		const newTop = Math.max(0, e.clientY - rect.top + marginaliaColumn.scrollTop);
+		const editorMain = editorContainer.closest('.editor-main');
+		if (!editorMain) return;
+		
+		const editorMainRect = editorMain.getBoundingClientRect();
+		const newTop = Math.max(0, e.clientY - editorMainRect.top);
 		
 		marginalia = marginalia.map(m =>
 			m.id === draggingMarginaliaId ? { ...m, top: newTop, updatedAt: new Date() } : m
@@ -237,12 +263,16 @@
 		await tick();
 		
 		const blocks = editorContainer.querySelectorAll('.ce-block');
-		const containerRect = editorContainer.getBoundingClientRect();
+		const editorMain = editorContainer.closest('.editor-main');
+		if (!editorMain) return;
+		
+		const editorMainRect = editorMain.getBoundingClientRect();
 		const positions = new Map<string, number>();
 		
 		blocks.forEach((block, index) => {
 			const blockRect = block.getBoundingClientRect();
-			const relativeTop = blockRect.top - containerRect.top + editorContainer!.scrollTop;
+			// Calculate relative to editor-main, which shares scroll with marginalia
+			const relativeTop = blockRect.top - editorMainRect.top;
 			const editorBlock = editor.blocks.getBlockByIndex(index);
 			const blockId = editorBlock?.id || `block-${index}`;
 			positions.set(blockId, relativeTop);
@@ -306,6 +336,92 @@
 		notifyChange();
 	}
 	
+	// Reference Import/Export functions
+	function openReferenceImport() {
+		referenceDialogMode = 'import';
+		showReferenceDialog = true;
+	}
+	
+	function openReferenceExport() {
+		referenceDialogMode = 'export';
+		showReferenceDialog = true;
+	}
+	
+	function closeReferenceDialog() {
+		showReferenceDialog = false;
+		importedReferences = [];
+	}
+	
+	async function handleReferenceFileSelect(event: Event) {
+		const input = event.target as HTMLInputElement;
+		if (!input.files?.length) return;
+		
+		const file = input.files[0];
+		const text = await file.text();
+		
+		try {
+			if (referenceFormat === 'bibtex') {
+				const { parseBibtex } = await import('$lib/services/referenceParser');
+				importedReferences = parseBibtex(text);
+			} else if (referenceFormat === 'csv') {
+				const { parseCsv } = await import('$lib/services/referenceParser');
+				importedReferences = parseCsv(text);
+			}
+		} catch (err) {
+			console.error('Failed to parse references:', err);
+		}
+	}
+	
+	async function saveImportedReferences() {
+		for (const ref of importedReferences) {
+			try {
+				await fetch('/api/literature', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(ref),
+				});
+			} catch (err) {
+				console.error('Failed to save reference:', err);
+			}
+		}
+		closeReferenceDialog();
+	}
+	
+	async function exportReferences() {
+		try {
+			const response = await fetch('/api/literature');
+			const data = await response.json();
+			
+			let content = '';
+			let filename = 'references';
+			let mimeType = 'text/plain';
+			
+			if (referenceFormat === 'bibtex') {
+				const { exportToBibtex } = await import('$lib/services/referenceParser');
+				content = exportToBibtex(data);
+				filename += '.bib';
+				mimeType = 'application/x-bibtex';
+			} else if (referenceFormat === 'csv') {
+				const { exportToCsv } = await import('$lib/services/referenceParser');
+				content = exportToCsv(data);
+				filename += '.csv';
+				mimeType = 'text/csv';
+			}
+			
+			const blob = new Blob([content], { type: mimeType });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = filename;
+			a.click();
+			URL.revokeObjectURL(url);
+			
+			closeReferenceDialog();
+		} catch (err) {
+			console.error('Failed to export references:', err);
+		}
+	}
+	
 	// Keyboard shortcuts
 	function handleKeydown(event: KeyboardEvent) {
 		if ((event.metaKey || event.ctrlKey) && event.key === 's') {
@@ -313,7 +429,9 @@
 			save();
 		}
 		if (event.key === 'Escape') {
-			if (showContextMenu) {
+			if (showReferenceDialog) {
+				closeReferenceDialog();
+			} else if (showContextMenu) {
 				closeContextMenu();
 			}
 		}
@@ -410,6 +528,9 @@
 		};
 		document.addEventListener('click', handleClickOutside);
 		
+		// Suppress unused warning for bind:this reference
+		void _referenceFileInput;
+		
 		return () => {
 			editor?.destroy();
 			document.removeEventListener('click', handleClickOutside);
@@ -447,6 +568,20 @@
 		
 		<!-- Central header area -->
 		<div class="header-center">
+			<!-- Back button for fullscreen mode -->
+			{#if mode === 'fullscreen' && onClose}
+				<button 
+					type="button" 
+					class="header-btn back-btn"
+					onclick={onClose}
+					title={i18n.t('action.close')}
+				>
+					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+						<polyline points="15 18 9 12 15 6" />
+					</svg>
+				</button>
+			{/if}
+			
 			<input
 				type="text"
 				class="title-input"
@@ -493,8 +628,8 @@
 					{/if}
 				</button>
 				
-				<!-- Expand / Fullscreen button -->
-				{#if onExpand}
+				<!-- Expand / Fullscreen button (inline mode only) -->
+				{#if onExpand && mode === 'inline'}
 					<button 
 						type="button" 
 						class="header-btn"
@@ -524,6 +659,17 @@
 						</svg>
 					</button>
 				{/if}
+				
+				<!-- Save button (fullscreen mode) -->
+				{#if mode === 'fullscreen' && onSave}
+					<button 
+						type="button" 
+						class="btn btn-primary btn-sm"
+						onclick={save}
+					>
+						{i18n.t('action.save')}
+					</button>
+				{/if}
 			</div>
 		</div>
 		
@@ -532,7 +678,7 @@
 			side="right" 
 			tabs={rightTabs} 
 			activeTab={rightTab}
-			onTabChange={(id) => rightTab = id as 'stats' | 'tags'}
+			onTabChange={(id) => rightTab = id as 'tags' | 'references' | 'stats'}
 			showTabsOnly={true}
 		/>
 	</header>
@@ -606,12 +752,10 @@
 			side="right" 
 			tabs={rightTabs} 
 			activeTab={rightTab}
-			onTabChange={(id) => rightTab = id as 'stats' | 'tags'}
+			onTabChange={(id) => rightTab = id as 'tags' | 'references' | 'stats'}
 			stickyContent={rightTab === 'stats'}
 		>
-			{#if rightTab === 'stats'}
-				<TextStatsPanel stats={textStats} />
-			{:else if rightTab === 'tags'}
+			{#if rightTab === 'tags'}
 				<div class="tags-content">
 					<div class="tags-list">
 						{#each tags as tag}
@@ -630,6 +774,30 @@
 						onkeydown={(e) => e.key === 'Enter' && addTag()}
 					/>
 				</div>
+			{:else if rightTab === 'references'}
+				<div class="references-content">
+					<div class="reference-actions">
+						<button type="button" class="btn btn-sm btn-ghost" onclick={openReferenceImport}>
+							<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+								<polyline points="17 8 12 3 7 8"/>
+								<line x1="12" y1="3" x2="12" y2="15"/>
+							</svg>
+							{i18n.t('references.import')}
+						</button>
+						<button type="button" class="btn btn-sm btn-ghost" onclick={openReferenceExport}>
+							<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+								<polyline points="7 10 12 15 17 10"/>
+								<line x1="12" y1="15" x2="12" y2="3"/>
+							</svg>
+							{i18n.t('references.export')}
+						</button>
+					</div>
+					<p class="sidebar-empty-hint">{i18n.t('references.empty')}</p>
+				</div>
+			{:else if rightTab === 'stats'}
+				<TextStatsPanel stats={textStats} />
 			{/if}
 		</EditorSidebar>
 	</div>
@@ -647,6 +815,104 @@
 			>
 				{i18n.t('action.delete')}
 			</button>
+		</div>
+	{/if}
+	
+	<!-- Reference Import/Export Dialog -->
+	{#if showReferenceDialog}
+		<div class="modal-backdrop" onclick={closeReferenceDialog} onkeydown={(e) => e.key === 'Escape' && closeReferenceDialog()} role="presentation">
+			<div class="modal-dialog" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && closeReferenceDialog()}>
+				<header class="modal-header">
+					<h2 class="modal-title">
+						{referenceDialogMode === 'import' ? i18n.t('references.import') : i18n.t('references.export')}
+					</h2>
+					<button type="button" class="modal-close" onclick={closeReferenceDialog} aria-label={i18n.t('action.close')}>
+						×
+					</button>
+				</header>
+				
+				<div class="modal-body">
+					<!-- Format selection -->
+					<fieldset class="form-group">
+						<legend class="form-label">{i18n.t('references.format')}</legend>
+						<div class="format-options" role="radiogroup">
+							<label class="format-option">
+								<input type="radio" bind:group={referenceFormat} value="bibtex" id="format-bibtex" />
+								<span>BibTeX (.bib)</span>
+							</label>
+							<label class="format-option">
+								<input type="radio" bind:group={referenceFormat} value="csv" id="format-csv" />
+								<span>CSV (.csv)</span>
+							</label>
+							<label class="format-option">
+								<input type="radio" bind:group={referenceFormat} value="excel" id="format-excel" />
+								<span>Excel (.xlsx)</span>
+							</label>
+						</div>
+					</fieldset>
+					
+					{#if referenceDialogMode === 'import'}
+						<!-- File input for import -->
+						<div class="form-group">
+							<label class="form-label" for="reference-file-input">{i18n.t('references.selectFile')}</label>
+							<input 
+								type="file" 
+								id="reference-file-input"
+								bind:this={_referenceFileInput}
+								accept={referenceFormat === 'bibtex' ? '.bib,.bibtex' : referenceFormat === 'csv' ? '.csv' : '.xlsx,.xls'}
+								onchange={handleReferenceFileSelect}
+								class="file-input"
+							/>
+						</div>
+						
+						<!-- Preview imported references -->
+						{#if importedReferences.length > 0}
+							<div class="import-preview">
+								<h4>{importedReferences.length} {i18n.t('references.found')}</h4>
+								<ul class="reference-list">
+									{#each importedReferences.slice(0, 5) as ref}
+										<li class="reference-item">
+											<strong>{ref.title}</strong>
+											{#if ref.authors?.length}
+												<span class="reference-authors">{ref.authors.join(', ')}</span>
+											{/if}
+											{#if ref.year}
+												<span class="reference-year">({ref.year})</span>
+											{/if}
+										</li>
+									{/each}
+									{#if importedReferences.length > 5}
+										<li class="reference-item more">+{importedReferences.length - 5} {i18n.t('references.more')}</li>
+									{/if}
+								</ul>
+							</div>
+						{/if}
+					{:else}
+						<!-- Export info -->
+						<p class="export-info">{i18n.t('references.exportInfo')}</p>
+					{/if}
+				</div>
+				
+				<footer class="modal-footer">
+					<button type="button" class="btn btn-ghost" onclick={closeReferenceDialog}>
+						{i18n.t('action.cancel')}
+					</button>
+					{#if referenceDialogMode === 'import'}
+						<button 
+							type="button" 
+							class="btn btn-primary" 
+							onclick={saveImportedReferences}
+							disabled={importedReferences.length === 0}
+						>
+							{i18n.t('references.importSelected')}
+						</button>
+					{:else}
+						<button type="button" class="btn btn-primary" onclick={exportReferences}>
+							{i18n.t('references.exportNow')}
+						</button>
+					{/if}
+				</footer>
+			</div>
 		</div>
 	{/if}
 </div>
@@ -771,16 +1037,17 @@
 		display: grid;
 		grid-template-columns: var(--margin-column-width) 1fr var(--tag-column-width);
 		flex: 1;
-		overflow: hidden;
+		overflow-y: auto;  /* Entire body scrolls together */
+		overflow-x: hidden;
 	}
 	
 	/* Main editor area */
 	.editor-main {
 		padding: var(--space-6) var(--space-8);
-		overflow-y: auto;
 		display: flex;
 		justify-content: center;
 		background: var(--color-bg-elevated);
+		min-height: 100%;
 	}
 	
 	:global(html.dark) .editor-main {
@@ -881,10 +1148,25 @@
 	
 	/* Sidebar content */
 	.spellcheck-content,
-	.tags-content {
+	.tags-content,
+	.references-content {
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-3);
+	}
+	
+	.reference-actions {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		padding: 0 var(--space-2);
+	}
+	
+	.reference-actions .btn {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		justify-content: flex-start;
 	}
 	
 	.sidebar-empty-hint {

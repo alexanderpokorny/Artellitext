@@ -2663,20 +2663,51 @@ html.high-contrast .tag {
 	position: relative;
 }
 
-.ce-block--drop-target .ce-block__content::before {
+/* Active/focused block indicator - thin accent line on left */
+.ce-block--focused .ce-block__content::before,
+.ce-block--selected .ce-block__content::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: -12px;
+	width: 2px;
+	background: var(--color-active);
+	border-radius: 1px;
+}
+
+/* Drop target indicator - thin accent line between blocks */
+.ce-block--drop-target .ce-block__content::after {
 	content: '';
 	position: absolute;
 	top: -2px;
 	left: 0;
 	right: 0;
-	height: 4px;
+	height: 2px;
 	background: var(--color-active);
-	border-radius: 2px;
+	border-radius: 1px;
+}
+
+/* Remove any black borders or outlines from blocks */
+.ce-block,
+.ce-block__content,
+.ce-block--focused,
+.ce-block--selected,
+.ce-block--dragging {
+	border: none !important;
+	outline: none !important;
+	box-shadow: none !important;
 }
 
 .ce-block--dragging {
 	opacity: 0.5;
 	cursor: grabbing;
+}
+
+/* Drag handle - no tooltip/popup */
+.ce-toolbar__actions [data-tooltip]::before,
+.ce-toolbar__actions [data-tooltip]::after {
+	display: none !important;
 }
 
 /* Drag handle visibility - ensure contrast in light mode */
