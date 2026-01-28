@@ -20,6 +20,7 @@
 	import { createTheme, createReadingMode } from '$stores/theme.svelte';
 	import { createI18n } from '$stores/i18n.svelte';
 	import { createUserState } from '$stores/user.svelte';
+	import { getEditorStats } from '$stores/editorStats.svelte';
 	import type { LayoutData } from './$types';
 	
 	// Props from server load
@@ -36,6 +37,7 @@
 	const readingMode = createReadingMode();
 	const i18n = createI18n();
 	const userState = createUserState();
+	const editorStats = getEditorStats();
 	
 	// Update user state when data changes
 	$effect(() => {
@@ -294,15 +296,21 @@
 		<span class="status-indicator" class:offline={syncStatus === 'offline'}>
 			{statusText}
 		</span>
-		{#if stats}
-			<span class="footer-stats">
+		<span class="footer-stats">
+			{#if editorStats.isEditorActive}
+				<span class="footer-stat">{editorStats.wordCount} {i18n.t('editor.words')}</span>
+				<span class="footer-divider">·</span>
+				<span class="footer-stat">{editorStats.readingTime} min</span>
+				<span class="footer-divider">·</span>
+			{/if}
+			{#if stats}
 				<span class="footer-stat">{stats.notes} {i18n.t('dashboard.stats.notes')}</span>
 				<span class="footer-divider">·</span>
 				<span class="footer-stat">{stats.documents} {i18n.t('dashboard.stats.documents')}</span>
 				<span class="footer-divider">·</span>
 				<span class="footer-stat">{formattedStorage()}</span>
-			</span>
-		{/if}
+			{/if}
+		</span>
 	</footer>
 </div>
 

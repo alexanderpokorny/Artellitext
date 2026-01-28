@@ -1738,6 +1738,47 @@ html.high-contrast .tag {
 	background: var(--color-bg-hover);
 }
 
+/* Math close/insert button */
+.math-close-btn {
+	margin-left: auto;
+	background: var(--color-success);
+	color: var(--color-text-inverse);
+	border-color: var(--color-success);
+}
+
+.math-close-btn:hover {
+	background: #15803d;
+}
+
+/* Math delete button */
+.math-delete-btn {
+	color: var(--color-error);
+	border-color: var(--color-error);
+	background: transparent;
+}
+
+.math-delete-btn:hover {
+	background: var(--color-error);
+	color: var(--color-text-inverse);
+}
+
+/* Collapsed math block */
+.math-block.math-collapsed {
+	border: none;
+	background: transparent;
+}
+
+.math-preview-collapsed {
+	cursor: pointer;
+	padding: var(--space-2);
+	border-radius: var(--radius-sm);
+	transition: background var(--transition-fast);
+}
+
+.math-preview-collapsed:hover {
+	background: var(--color-bg-hover);
+}
+
 .equation-wrapper {
 	display: flex;
 	align-items: center;
@@ -1759,6 +1800,29 @@ html.high-contrast .tag {
 	margin: 0;
 	overflow-x: auto;
 	overflow-y: hidden;
+}
+
+/* Inline Math ($...$) */
+.math-inline {
+	display: inline;
+	padding: 0 2px;
+	vertical-align: baseline;
+}
+
+.math-inline .katex {
+	font-size: 1em;
+}
+
+/* Display Math in Paragraph ($$...$$) */
+.math-display {
+	display: block;
+	text-align: center;
+	margin: var(--space-3) 0;
+	overflow-x: auto;
+}
+
+.math-display .katex-display {
+	margin: 0;
 }
 
 /* ===========================================
@@ -2403,4 +2467,34 @@ html.high-contrast .tag {
 .bib-import-btn-primary:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
+}
+/* ===========================================
+   EDITOR.JS UI OVERRIDES
+   =========================================== */
+
+/* Hide the Plus button and tooltip - everything via slash command only */
+.ce-toolbar__plus {
+	display: none !important;
+}
+
+/* Hide the toolbar actions (settings button on left) */
+.ce-toolbar__actions {
+	display: none !important;
+}
+
+/* Position toolbox (slash menu) to the left */
+.ce-toolbox {
+	left: 0 !important;
+	transform: translateX(0) !important;
+}
+
+/* Ensure toolbox appears properly on slash trigger */
+.ce-toolbox--opened {
+	left: 0 !important;
+}
+
+/* Style the toolbox for better readability */
+.ce-toolbox__button {
+	justify-content: flex-start !important;
+	padding-left: var(--space-2) !important;
 }

@@ -9,12 +9,14 @@
 	import { onMount, tick } from 'svelte';
 	import { browser } from '$app/environment';
 	import { createI18n } from '$stores/i18n.svelte';
+	import { getEditorStats, extractTextFromEditorData, calculateWordCount, calculateReadingTime } from '$stores/editorStats.svelte';
 	import type { MarginaliaNote } from '$lib/types';
 	import type { PageData } from './$types';
 	
 	const { } = $props<{ data: PageData }>();
 	
 	const i18n = createI18n();
+	const editorStats = getEditorStats();
 	
 	// Editor state
 	let editorContainer: HTMLElement;
@@ -178,13 +180,14 @@
 			// @ts-expect-error No type declarations available
 			const DragDrop = (await import('editorjs-drag-drop')).default;
 			
-			const { MathTool, MermaidTool, CitationTool, BibliographyTool } = await import('$lib/editor/tools');
+			const { MathTool, MathInlineTool, MermaidTool, CitationTool, BibliographyTool } = await import('$lib/editor/tools');
 			await import('katex/dist/katex.min.css');
 			
 			editor = new EditorJS({
 				holder: editorContainer,
 				placeholder: i18n.t('editor.placeholder'),
 				autofocus: true,
+				inlineToolbar: ['bold', 'italic', 'link', 'mathInline'],
 				tools: {
 					header: {
 						// @ts-expect-error Editor.js types
@@ -201,7 +204,10 @@
 					math: {
 						// @ts-expect-error Custom tool
 						class: MathTool,
-						config: { placeholder: 'LaTeX (e.g., E = mc^2)' },
+						config: { placeholder: 'LaTeX (z.B. E = mc^2 oder \\begin{align}...)' },
+					},
+					mathInline: {
+						class: MathInlineTool,
 					},
 					mermaid: {
 						// @ts-expect-error Custom tool
@@ -233,6 +239,9 @@
 		
 		initEditor();
 		
+		// Set editor as active for footer stats
+		editorStats.setActive(true);
+		
 		// Close context menu on click outside
 		const handleClickOutside = (e: MouseEvent) => {
 			if (showContextMenu && !(e.target as HTMLElement).closest('.context-menu')) {
@@ -243,6 +252,7 @@
 		
 		return () => {
 			editor?.destroy();
+			editorStats.setActive(false);
 			document.removeEventListener('click', handleClickOutside);
 		};
 	});
@@ -271,10 +281,21 @@
 		});
 	}
 	
-	// Calculate word count
-	function updateWordCount() {
-		wordCount = Math.floor(Math.random() * 500) + 100;
-		readingTime = Math.ceil(wordCount / 200);
+	// Calculate word count from editor content
+	async function updateWordCount() {
+		if (!editor) return;
+		
+		try {
+			const data = await editor.save();
+			const text = extractTextFromEditorData(data);
+			wordCount = calculateWordCount(text);
+			readingTime = calculateReadingTime(wordCount);
+			
+			// Update global stats for footer
+			editorStats.update(wordCount, readingTime);
+		} catch {
+			// Ignore errors during word count
+		}
 	}
 	
 	// Save with offline-first approach
@@ -583,18 +604,19 @@
 		z-index: var(--z-modal);
 	}
 	
-	.editor-page.fullscreen .marginalia-column,
+	/* Fullscreen: Keep marginalia, hide tags only */
 	.editor-page.fullscreen .tags-column {
 		display: none;
 	}
 	
 	.editor-page.fullscreen .editor-layout {
-		grid-template-columns: 1fr;
+		grid-template-columns: var(--margin-column-width) 1fr;
 	}
 	
 	.editor-page.fullscreen .editor-main {
 		padding: var(--space-8) var(--space-12);
 	}
+
 	
 	/* Fullscreen/width toggle buttons */
 	.fullscreen-btn,

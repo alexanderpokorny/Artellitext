@@ -5,6 +5,7 @@
  */
 
 export { default as MathTool } from './MathTool';
+export { default as MathInlineTool, processMathInText, renderAlignedEquations } from './MathInlineTool';
 export { default as MermaidTool } from './MermaidTool';
 export { default as CitationTool } from './CitationTool';
 export { default as BibliographyTool } from './BibliographyTool';
@@ -17,3 +18,4 @@ export {
 	type ParsedCitation,
 	type BibImportResult 
 } from './BibImportDialog';
+

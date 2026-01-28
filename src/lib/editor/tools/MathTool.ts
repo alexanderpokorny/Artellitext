@@ -3,6 +3,7 @@
  * 
  * Renders LaTeX formulas using KaTeX.
  * Supports both display ($$...$$) and inline ($...$) modes.
+ * Collapsible edit interface with close button.
  */
 
 import katex from 'katex';
@@ -27,6 +28,10 @@ interface API {
 	i18n: {
 		t: (key: string) => string;
 	};
+	blocks: {
+		delete: (index?: number) => void;
+		getCurrentBlockIndex: () => number;
+	};
 }
 
 export default class MathTool {
@@ -34,6 +39,9 @@ export default class MathTool {
 	private wrapper: HTMLElement | null = null;
 	private input: HTMLTextAreaElement | null = null;
 	private preview: HTMLElement | null = null;
+	private inputContainer: HTMLElement | null = null;
+	private controls: HTMLElement | null = null;
+	private isCollapsed: boolean = false;
 	private api: API;
 	private config: MathConfig;
 	private readOnly: boolean;
@@ -64,6 +72,8 @@ export default class MathTool {
 		this.api = api;
 		this.config = config;
 		this.readOnly = readOnly;
+		// Start collapsed if there's already content
+		this.isCollapsed = !!data.latex;
 	}
 
 	render(): HTMLElement {
@@ -94,8 +104,8 @@ export default class MathTool {
 		if (!this.wrapper) return;
 
 		// Create input area
-		const inputContainer = document.createElement('div');
-		inputContainer.classList.add('math-input-container');
+		this.inputContainer = document.createElement('div');
+		this.inputContainer.classList.add('math-input-container');
 
 		this.input = document.createElement('textarea');
 		this.input.classList.add('math-input');
@@ -115,15 +125,21 @@ export default class MathTool {
 			this.input!.style.height = this.input!.scrollHeight + 'px';
 		});
 
-		inputContainer.appendChild(this.input);
+		this.inputContainer.appendChild(this.input);
 
 		// Create preview area
 		this.preview = document.createElement('div');
 		this.preview.classList.add('math-preview');
+		// Click on preview to expand/edit
+		this.preview.addEventListener('click', () => {
+			if (this.isCollapsed) {
+				this.expandEdit();
+			}
+		});
 
-		// Mode toggle
-		const controls = document.createElement('div');
-		controls.classList.add('math-controls');
+		// Mode toggle and controls
+		this.controls = document.createElement('div');
+		this.controls.classList.add('math-controls');
 
 		const displayToggle = document.createElement('button');
 		displayToggle.type = 'button';
@@ -136,21 +152,72 @@ export default class MathTool {
 			this.renderLatex();
 		});
 
-		controls.appendChild(displayToggle);
+		// Close/Collapse button - inserts the formula and collapses the editor
+		const closeBtn = document.createElement('button');
+		closeBtn.type = 'button';
+		closeBtn.classList.add('math-toggle', 'math-close-btn');
+		closeBtn.innerHTML = '✓ Einfügen';
+		closeBtn.title = 'Formel einfügen und Editor schließen';
+		closeBtn.addEventListener('click', () => {
+			if (this.data.latex.trim()) {
+				this.collapseEdit();
+			}
+		});
 
-		this.wrapper.appendChild(inputContainer);
+		// Delete button
+		const deleteBtn = document.createElement('button');
+		deleteBtn.type = 'button';
+		deleteBtn.classList.add('math-toggle', 'math-delete-btn');
+		deleteBtn.innerHTML = '✕';
+		deleteBtn.title = 'Block löschen';
+		deleteBtn.addEventListener('click', () => {
+			const index = this.api.blocks.getCurrentBlockIndex();
+			this.api.blocks.delete(index);
+		});
+
+		this.controls.appendChild(displayToggle);
+		this.controls.appendChild(closeBtn);
+		this.controls.appendChild(deleteBtn);
+
+		this.wrapper.appendChild(this.inputContainer);
 		this.wrapper.appendChild(this.preview);
-		this.wrapper.appendChild(controls);
+		this.wrapper.appendChild(this.controls);
 
 		// Initial render
 		this.renderLatex();
 
+		// Apply collapsed state if needed
+		if (this.isCollapsed && this.data.latex.trim()) {
+			this.collapseEdit();
+		}
+
 		// Focus input on click
 		this.wrapper.addEventListener('click', (e) => {
-			if (e.target === this.wrapper || e.target === this.preview) {
+			if (!this.isCollapsed && (e.target === this.wrapper || e.target === this.preview)) {
 				this.input?.focus();
 			}
 		});
+	}
+
+	private collapseEdit(): void {
+		if (!this.inputContainer || !this.controls) return;
+		
+		this.isCollapsed = true;
+		this.inputContainer.style.display = 'none';
+		this.controls.style.display = 'none';
+		this.wrapper?.classList.add('math-collapsed');
+		this.preview?.classList.add('math-preview-collapsed');
+	}
+
+	private expandEdit(): void {
+		if (!this.inputContainer || !this.controls) return;
+		
+		this.isCollapsed = false;
+		this.inputContainer.style.display = 'block';
+		this.controls.style.display = 'flex';
+		this.wrapper?.classList.remove('math-collapsed');
+		this.preview?.classList.remove('math-preview-collapsed');
+		this.input?.focus();
 	}
 
 	private renderLatex(): void {
@@ -233,3 +300,4 @@ export default class MathTool {
 		return wrapper;
 	}
 }
+
