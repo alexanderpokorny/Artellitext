@@ -153,6 +153,25 @@ export const translations = {
 		'time.daysAgo': 'Vor {days} Tagen',
 		'time.today': 'Heute',
 		'time.yesterday': 'Gestern',
+		
+		// Sort
+		'sort.updated': 'Aktualisiert',
+		'sort.created': 'Erstellt',
+		'sort.title': 'Titel',
+		'sort.words': 'Wörter',
+		
+		// View modes
+		'view.list': 'Listenansicht',
+		'view.gridSmall': 'Kleine Karten',
+		'view.gridLarge': 'Große Karten',
+		'view.expanded': 'Erweitert',
+		
+		// Dashboard extras
+		'dashboard.noNotes': 'Noch keine Notizen vorhanden',
+		'dashboard.createFirst': 'Erste Notiz erstellen',
+		
+		// Editor extras
+		'editor.words': 'Wörter',
 	},
 	
 	en: {
@@ -288,6 +307,25 @@ export const translations = {
 		'time.daysAgo': '{days} days ago',
 		'time.today': 'Today',
 		'time.yesterday': 'Yesterday',
+		
+		// Sort
+		'sort.updated': 'Updated',
+		'sort.created': 'Created',
+		'sort.title': 'Title',
+		'sort.words': 'Words',
+		
+		// View modes
+		'view.list': 'List view',
+		'view.gridSmall': 'Small cards',
+		'view.gridLarge': 'Large cards',
+		'view.expanded': 'Expanded',
+		
+		// Dashboard extras
+		'dashboard.noNotes': 'No notes yet',
+		'dashboard.createFirst': 'Create your first note',
+		
+		// Editor extras
+		'editor.words': 'words',
 	},
 	
 	fr: {
@@ -423,6 +461,25 @@ export const translations = {
 		'time.daysAgo': 'Il y a {days} jours',
 		'time.today': 'Aujourd\'hui',
 		'time.yesterday': 'Hier',
+		
+		// Sort
+		'sort.updated': 'Mis à jour',
+		'sort.created': 'Créé',
+		'sort.title': 'Titre',
+		'sort.words': 'Mots',
+		
+		// View modes
+		'view.list': 'Liste',
+		'view.gridSmall': 'Petites cartes',
+		'view.gridLarge': 'Grandes cartes',
+		'view.expanded': 'Étendu',
+		
+		// Dashboard extras
+		'dashboard.noNotes': 'Pas encore de notes',
+		'dashboard.createFirst': 'Créer votre première note',
+		
+		// Editor extras
+		'editor.words': 'mots',
 	},
 	
 	es: {
@@ -558,6 +615,25 @@ export const translations = {
 		'time.daysAgo': 'Hace {days} días',
 		'time.today': 'Hoy',
 		'time.yesterday': 'Ayer',
+		
+		// Sort
+		'sort.updated': 'Actualizado',
+		'sort.created': 'Creado',
+		'sort.title': 'Título',
+		'sort.words': 'Palabras',
+		
+		// View modes
+		'view.list': 'Lista',
+		'view.gridSmall': 'Tarjetas pequeñas',
+		'view.gridLarge': 'Tarjetas grandes',
+		'view.expanded': 'Expandido',
+		
+		// Dashboard extras
+		'dashboard.noNotes': 'Aún no hay notas',
+		'dashboard.createFirst': 'Crea tu primera nota',
+		
+		// Editor extras
+		'editor.words': 'palabras',
 	},
 	
 	it: {
@@ -693,6 +769,25 @@ export const translations = {
 		'time.daysAgo': '{days} giorni fa',
 		'time.today': 'Oggi',
 		'time.yesterday': 'Ieri',
+		
+		// Sort
+		'sort.updated': 'Aggiornato',
+		'sort.created': 'Creato',
+		'sort.title': 'Titolo',
+		'sort.words': 'Parole',
+		
+		// View modes
+		'view.list': 'Lista',
+		'view.gridSmall': 'Piccole schede',
+		'view.gridLarge': 'Grandi schede',
+		'view.expanded': 'Espanso',
+		
+		// Dashboard extras
+		'dashboard.noNotes': 'Nessuna nota ancora',
+		'dashboard.createFirst': 'Crea la tua prima nota',
+		
+		// Editor extras
+		'editor.words': 'parole',
 	},
 } as const;
 

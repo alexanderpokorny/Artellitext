@@ -16,17 +16,14 @@ export const load: PageServerLoad = async ({ parent }) => {
 		throw redirect(302, '/auth');
 	}
 	
-	// Fetch recent notes for the user
-	// Note: This will work once the database is initialized
+	// Fetch recent notes for the user (with full content for excerpts)
 	try {
 		const notesResult = await query(
-			`SELECT id, title, 
-			        SUBSTRING(content->>'text' FOR 200) as excerpt,
-			        updated_at
+			`SELECT id, title, content, tags, word_count, updated_at, created_at
 			 FROM notes 
 			 WHERE user_id = $1 
 			 ORDER BY updated_at DESC 
-			 LIMIT 5`,
+			 LIMIT 12`,
 			[user.id]
 		);
 		
@@ -38,14 +35,18 @@ export const load: PageServerLoad = async ({ parent }) => {
 		);
 		
 		return {
-			recentNotes: notesResult.rows,
+			recentNotes: notesResult.rows.map(row => ({
+				...row,
+				excerpt: null, // Will be computed client-side from content
+			})),
 			stats: {
-				notes: statsResult.rows[0]?.note_count || 0,
-				documents: statsResult.rows[0]?.doc_count || 0,
+				notes: parseInt(statsResult.rows[0]?.note_count || '0'),
+				documents: parseInt(statsResult.rows[0]?.doc_count || '0'),
 			},
 		};
-	} catch {
+	} catch (err) {
 		// Database might not be initialized yet
+		console.error('Dashboard load error:', err);
 		return {
 			recentNotes: [],
 			stats: { notes: 0, documents: 0 },

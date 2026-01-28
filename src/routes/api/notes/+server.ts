@@ -21,17 +21,30 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 	const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 100);
 	const offset = (page - 1) * limit;
 	const tag = url.searchParams.get('tag');
+	const sortBy = url.searchParams.get('sort') || 'updated';
+	const sortOrder = url.searchParams.get('order') || 'desc';
+	
+	// Map sort fields to database columns
+	const sortColumnMap: Record<string, string> = {
+		updated: 'updated_at',
+		created: 'created_at',
+		title: 'title',
+		words: 'word_count',
+	};
+	const sortColumn = sortColumnMap[sortBy] || 'updated_at';
+	const orderDirection = sortOrder === 'asc' ? 'ASC' : 'DESC';
 	
 	try {
-		let notes: Note[];
+		let notes: any[];
 		let total: number;
 		
+		const baseSelect = `SELECT id, title, content, summary, status, tags, word_count, reading_time, created_at, updated_at FROM notes`;
+		
 		if (tag) {
-			const result = await query<Note>(
-				`SELECT id, title, summary, status, tags, word_count, reading_time, created_at, updated_at
-				 FROM notes
+			const result = await query(
+				`${baseSelect}
 				 WHERE user_id = $1 AND $2 = ANY(tags)
-				 ORDER BY updated_at DESC
+				 ORDER BY ${sortColumn} ${orderDirection}
 				 LIMIT $3 OFFSET $4`,
 				[locals.user.id, tag, limit, offset]
 			);
@@ -43,11 +56,10 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 			);
 			total = parseInt(countResult?.count || '0');
 		} else {
-			const result = await query<Note>(
-				`SELECT id, title, summary, status, tags, word_count, reading_time, created_at, updated_at
-				 FROM notes
+			const result = await query(
+				`${baseSelect}
 				 WHERE user_id = $1
-				 ORDER BY updated_at DESC
+				 ORDER BY ${sortColumn} ${orderDirection}
 				 LIMIT $2 OFFSET $3`,
 				[locals.user.id, limit, offset]
 			);
