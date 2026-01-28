@@ -180,12 +180,12 @@
 			const Header = (await import('@editorjs/header')).default;
 			const List = (await import('@editorjs/list')).default;
 			const Quote = (await import('@editorjs/quote')).default;
-			const Code = (await import('@editorjs/code')).default;
 			// @ts-expect-error No type declarations available
 			const DragDrop = (await import('editorjs-drag-drop')).default;
 			
-			const { MathTool, MermaidTool, CitationTool, BibliographyTool } = await import('$lib/editor/tools');
+			const { MathTool, MathInlineTool, MathParagraph, CodeTool, MermaidTool, CitationTool, BibliographyTool } = await import('$lib/editor/tools');
 			await import('katex/dist/katex.min.css');
+			await import('highlight.js/styles/github-dark.css');
 			
 			// Load existing content or start fresh
 			const existingContent = data.note?.content;
@@ -195,7 +195,14 @@
 				placeholder: i18n.t('editor.placeholder'),
 				autofocus: true,
 				data: existingContent || undefined,
+				defaultBlock: 'paragraph',
+				inlineToolbar: ['bold', 'italic', 'link', 'mathInline'],
 				tools: {
+					paragraph: {
+						// @ts-expect-error Custom tool
+						class: MathParagraph,
+						inlineToolbar: true,
+					},
 					header: {
 						// @ts-expect-error Editor.js types
 						class: Header,
@@ -207,11 +214,17 @@
 						inlineToolbar: true,
 					},
 					quote: { class: Quote, inlineToolbar: true },
-					code: Code,
+					code: {
+						// @ts-expect-error Custom tool
+						class: CodeTool,
+					},
 					math: {
 						// @ts-expect-error Custom tool
 						class: MathTool,
 						config: { placeholder: 'LaTeX (e.g., E = mc^2)' },
+					},
+					mathInline: {
+						class: MathInlineTool,
 					},
 					mermaid: {
 						// @ts-expect-error Custom tool

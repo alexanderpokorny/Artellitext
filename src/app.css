@@ -1898,6 +1898,130 @@ html.high-contrast .tag {
 	padding: var(--space-2);
 }
 
+/* ===========================================
+   EDITOR TOOLS - Code Block with Syntax Highlighting
+   =========================================== */
+
+.code-block {
+	margin: var(--space-3) 0;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-bg-elevated);
+	overflow: hidden;
+}
+
+.code-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: var(--space-2) var(--space-3);
+	background: var(--color-bg-sunken);
+	border-bottom: 1px solid var(--color-border);
+}
+
+.code-language-select {
+	font-family: var(--font-machine);
+	font-size: var(--font-size-xs);
+	color: var(--color-text-secondary);
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	padding: var(--space-1) var(--space-2);
+	cursor: pointer;
+}
+
+.code-language-select:focus {
+	outline: none;
+	border-color: var(--color-active);
+}
+
+.code-copy-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	background: transparent;
+	border: none;
+	color: var(--color-text-muted);
+	cursor: pointer;
+	border-radius: var(--radius-sm);
+	transition: all var(--transition-fast);
+}
+
+.code-copy-btn:hover {
+	background: var(--color-bg-hover);
+	color: var(--color-text);
+}
+
+.code-container {
+	position: relative;
+}
+
+.code-textarea {
+	width: 100%;
+	min-height: 36px;
+	padding: var(--space-3);
+	font-family: var(--font-mono);
+	font-size: var(--font-size-sm);
+	line-height: var(--line-height-relaxed);
+	color: var(--color-text);
+	background: var(--color-bg-sunken);
+	border: none;
+	resize: none;
+	overflow: hidden;
+	tab-size: 4;
+}
+
+.code-textarea:focus {
+	outline: none;
+}
+
+/* Show textarea when editing, hide view */
+.code-block.editing .code-textarea {
+	position: relative;
+	z-index: 1;
+}
+
+.code-block.editing .code-view {
+	display: none;
+}
+
+/* Show view when not editing, hide textarea */
+.code-block:not(.editing) .code-textarea {
+	position: absolute;
+	top: 0;
+	left: 0;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.code-block:not(.editing) .code-view {
+	display: block;
+}
+
+.code-view {
+	margin: 0;
+	padding: var(--space-3);
+	font-family: var(--font-mono);
+	font-size: var(--font-size-sm);
+	line-height: var(--line-height-relaxed);
+	overflow-x: auto;
+	cursor: text;
+	background: var(--color-bg-sunken);
+}
+
+.code-view code {
+	font-family: var(--font-mono);
+	background: transparent;
+}
+
+/* Highlight.js theme overrides */
+.code-view .hljs {
+	background: transparent;
+	padding: 0;
+}
+
 .mermaid-controls {
 	display: flex;
 	gap: var(--space-2);
@@ -2487,11 +2611,17 @@ html.high-contrast .tag {
 .ce-toolbox {
 	left: 0 !important;
 	transform: translateX(0) !important;
+	z-index: 100 !important;
 }
 
 /* Ensure toolbox appears properly on slash trigger */
 .ce-toolbox--opened {
 	left: 0 !important;
+	z-index: 100 !important;
+	background: var(--color-bg-elevated);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-lg);
 }
 
 /* Style the toolbox for better readability */
@@ -2547,6 +2677,25 @@ html.high-contrast .tag {
 .ce-block--dragging {
 	opacity: 0.5;
 	cursor: grabbing;
+}
+
+/* Drag handle visibility - ensure contrast in light mode */
+.ce-toolbar__actions .ce-toolbar__actions-buttons {
+	opacity: 0.7;
+}
+
+.ce-toolbar__actions .ce-toolbar__settings-btn,
+.ce-toolbar__actions button[data-tool="move-up"],
+.ce-toolbar__actions button[data-tool="move-down"] {
+	color: var(--color-text-secondary);
+}
+
+html:not(.dark) .ce-toolbar__actions {
+	opacity: 0.6;
+}
+
+html:not(.dark) .ce-block:hover .ce-toolbar__actions {
+	opacity: 1;
 }
 
 /* Block tune wrapper (settings menu) */

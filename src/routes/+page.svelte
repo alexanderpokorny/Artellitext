@@ -218,12 +218,12 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 			const Header = (await import('@editorjs/header')).default;
 			const List = (await import('@editorjs/list')).default;
 			const Quote = (await import('@editorjs/quote')).default;
-			const Code = (await import('@editorjs/code')).default;
 			// @ts-expect-error No type declarations available
 			const DragDrop = (await import('editorjs-drag-drop')).default;
 			
-			const { MathTool, MathInlineTool, MermaidTool, CitationTool, BibliographyTool } = await import('$lib/editor/tools');
+			const { MathTool, MathInlineTool, MathParagraph, CodeTool, MermaidTool, CitationTool, BibliographyTool } = await import('$lib/editor/tools');
 			await import('katex/dist/katex.min.css');
+			await import('highlight.js/styles/github-dark.css');
 			
 			expandedEditor = new EditorJS({
 				holder: expandedEditorContainer,
@@ -232,7 +232,13 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 				autofocus: true,
 				minHeight: 200,
 				inlineToolbar: ['bold', 'italic', 'link', 'mathInline'],
+				defaultBlock: 'paragraph',
 				tools: {
+					paragraph: {
+						// @ts-expect-error Custom tool
+						class: MathParagraph,
+						inlineToolbar: true,
+					},
 					header: {
 						// @ts-expect-error Editor.js types
 						class: Header,
@@ -244,7 +250,10 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 						inlineToolbar: true,
 					},
 					quote: { class: Quote, inlineToolbar: true },
-					code: Code,
+					code: {
+						// @ts-expect-error Custom tool
+						class: CodeTool,
+					},
 					math: {
 						// @ts-expect-error Custom tool
 						class: MathTool,
@@ -516,6 +525,25 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 		} finally {
 			isEditorLoading = false;
 		}
+	}
+	
+	// Marginalia functions for expanded editor
+	function addExpandedMarginalia() {
+		const newMarg: MarginaliaNote = {
+			id: crypto.randomUUID(),
+			blockId: '',
+			content: '',
+			top: 0,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		};
+		expandedMarginalia = [...expandedMarginalia, newMarg];
+		expandedSaveStatus = 'unsaved';
+	}
+	
+	function deleteExpandedMarginalia(id: string) {
+		expandedMarginalia = expandedMarginalia.filter(m => m.id !== id);
+		expandedSaveStatus = 'unsaved';
 	}
 	
 	// Context menu helpers (for future marginalia feature)
@@ -861,18 +889,18 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 											title={expandedWidthMode === 'narrow' ? i18n.t('editor.expandWidth') : i18n.t('editor.narrowWidth')}
 										>
 											{#if expandedWidthMode === 'narrow'}
-												<!-- Expand width icon -->
+												<!-- Narrow mode - show expand icon (wider lines) -->
 												<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-													<path d="M21 12H3" />
-													<path d="M15 6l6 6-6 6" />
-													<path d="M9 18l-6-6 6-6" />
+													<line x1="3" y1="6" x2="21" y2="6" />
+													<line x1="3" y1="12" x2="21" y2="12" />
+													<line x1="3" y1="18" x2="21" y2="18" />
 												</svg>
 											{:else}
-												<!-- Collapse width icon -->
+												<!-- Wide mode - show collapse icon (narrower lines) -->
 												<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-													<path d="M12 3v18" />
-													<path d="M18 9l-6-6-6 6" />
-													<path d="M6 15l6 6 6-6" />
+													<line x1="6" y1="6" x2="18" y2="6" />
+													<line x1="6" y1="12" x2="18" y2="12" />
+													<line x1="6" y1="18" x2="18" y2="18" />
 												</svg>
 											{/if}
 										</button>
@@ -914,8 +942,27 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 							>
 								{#if expandedLeftTab === 'marginalia'}
 									<div class="marginalia-content">
+										<button 
+											type="button" 
+											class="btn btn-sm marginalia-add-btn"
+											onclick={addExpandedMarginalia}
+										>
+											<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+												<line x1="12" y1="5" x2="12" y2="19" />
+												<line x1="5" y1="12" x2="19" y2="12" />
+											</svg>
+											{i18n.t('editor.newMarginalia')}
+										</button>
 										{#each expandedMarginalia as margNote (margNote.id)}
 											<div class="marginalia-note">
+												<button 
+													type="button" 
+													class="marginalia-delete-btn"
+													onclick={() => deleteExpandedMarginalia(margNote.id)}
+													aria-label={i18n.t('action.delete')}
+												>
+													×
+												</button>
 												<textarea
 													class="marginalia-textarea"
 													value={margNote.content}
@@ -927,9 +974,6 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 												></textarea>
 											</div>
 										{/each}
-										{#if expandedMarginalia.length === 0}
-											<p class="sidebar-empty-hint">{i18n.t('editor.newMarginalia')}</p>
-										{/if}
 									</div>
 								{:else if expandedLeftTab === 'spellcheck'}
 									<div class="spellcheck-content">
@@ -1535,14 +1579,14 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 		border: 1px solid var(--color-active);
 		border-radius: var(--radius-md);
 		overflow: hidden;
-		min-height: 100px;
-		max-height: 80vh;
+		min-height: 150px;
+		max-height: 50vh;
 	}
 	
 	/* Wide mode for inline editor */
 	.inline-expanded-editor.wide-mode {
 		max-height: none;
-		min-height: 60vh;
+		min-height: 70vh;
 	}
 	
 	/* Light theme: same background as marginalia */
@@ -1765,6 +1809,46 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 	
 	.inline-expanded-editor .marginalia-note {
 		margin-bottom: var(--space-2);
+		position: relative;
+	}
+	
+	.inline-expanded-editor .marginalia-delete-btn {
+		position: absolute;
+		top: 0;
+		right: 0;
+		width: 20px;
+		height: 20px;
+		padding: 0;
+		background: transparent;
+		border: none;
+		color: var(--color-text-muted);
+		cursor: pointer;
+		font-size: 16px;
+		line-height: 1;
+		opacity: 0;
+		transition: opacity var(--transition-fast);
+	}
+	
+	.inline-expanded-editor .marginalia-note:hover .marginalia-delete-btn {
+		opacity: 1;
+	}
+	
+	.inline-expanded-editor .marginalia-delete-btn:hover {
+		color: var(--color-error);
+	}
+	
+	.inline-expanded-editor .marginalia-add-btn {
+		width: 100%;
+		justify-content: center;
+		gap: var(--space-1);
+		margin-bottom: var(--space-3);
+		background: var(--color-bg-sunken);
+		border: 1px dashed var(--color-border);
+	}
+	
+	.inline-expanded-editor .marginalia-add-btn:hover {
+		background: var(--color-bg-hover);
+		border-color: var(--color-active);
 	}
 	
 	.inline-expanded-editor .marginalia-textarea {
