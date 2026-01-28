@@ -159,8 +159,13 @@ html.high-contrast {
 	--sidebar-width: 260px;
 	--header-height: 60px;
 	--footer-height: 38px;
+	--status-bar-height: 38px;
 	--content-max-width: 720px;
 	--site-padding: clamp(1rem, 3vw, 2rem);
+	
+	/* Editor Layout */
+	--margin-column-width: 180px;
+	--tag-column-width: 200px;
 	
 	/* Border Radius (from Ghost theme - subtle, not rounded) */
 	--radius-sm: 3px;

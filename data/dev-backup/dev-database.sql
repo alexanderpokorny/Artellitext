@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict nHuBcvM8zO1sYgZeWBp9l5jfDrMffIt1DVKbVZgkrDupNkEaXFbNle3zXnUiqmh
+\restrict 1v2IvTy1GaJd8zR4dXg5cyOpOQiyKPWRH94P9bZrQrpO16lg3585JFdYFLHxbv8
 
 -- Dumped from database version 17.7 (Debian 17.7-3.pgdg12+1)
 -- Dumped by pg_dump version 17.7 (Debian 17.7-3.pgdg12+1)
@@ -337,6 +337,8 @@ COPY public.notes (id, user_id, title, content, summary, status, tags, language,
 00000000-1000-0000-0000-000000000001	00000000-0000-0000-0000-000000000001	Willkommen bei Artellitext	{"type": "doc", "content": [{"type": "heading", "attrs": {"level": 1}, "content": [{"text": "Willkommen bei Artellitext", "type": "text"}]}, {"type": "paragraph", "content": [{"text": "Artellitext ist dein intelligenter Schreibassistent mit ", "type": "text"}, {"text": "Offline-First", "type": "text", "marks": [{"type": "bold"}]}, {"text": " Architektur und ", "type": "text"}, {"text": "KI-Unterstützung", "type": "text", "marks": [{"type": "bold"}]}, {"text": ".", "type": "text"}]}, {"type": "heading", "attrs": {"level": 2}, "content": [{"text": "Features", "type": "text"}]}, {"type": "bulletList", "content": [{"type": "listItem", "content": [{"type": "paragraph", "content": [{"text": "Block-basierter Editor", "type": "text"}]}]}, {"type": "listItem", "content": [{"type": "paragraph", "content": [{"text": "PDF & EPUB Reader", "type": "text"}]}]}, {"type": "listItem", "content": [{"type": "paragraph", "content": [{"text": "Literaturverwaltung", "type": "text"}]}]}, {"type": "listItem", "content": [{"type": "paragraph", "content": [{"text": "KI-gestützte Textanalyse", "type": "text"}]}]}]}]}	\N	published	{welcome,tutorial,getting-started}	de	42	0	\N	\N	\N	2026-01-28 14:07:11.214843+00	2026-01-28 14:07:11.214843+00
 00000000-1000-0000-0000-000000000002	00000000-0000-0000-0000-000000000001	Meine erste wissenschaftliche Notiz	{"type": "doc", "content": [{"type": "heading", "attrs": {"level": 1}, "content": [{"text": "Forschungsnotizen", "type": "text"}]}, {"type": "paragraph", "content": [{"text": "Diese Notiz enthält meine ersten Gedanken zum Thema...", "type": "text"}]}]}	\N	draft	{research,draft}	de	12	0	\N	\N	\N	2026-01-28 14:07:11.214843+00	2026-01-28 14:07:11.214843+00
 0395ecd5-0483-435f-b56b-04b4adea3df0	660abf11-d556-4c6f-8c22-d2e79a1f054a	Unbenannt	{"time": 1768258542895, "blocks": [{"id": "hXaZb7HNwm", "data": {"text": "dsjfdsfksdfj"}, "type": "paragraph"}, {"id": "3Y7ISBkp7g", "data": {"text": "Hallo", "caption": "", "alignment": "left"}, "type": "quote"}, {"id": "3PQ3LXtpJ2", "data": {"text": "fasdfsfdsfs"}, "type": "paragraph"}], "version": "2.31.1"}	\N	draft	{}	de	3	0	\N	\N	\N	2026-01-12 22:55:42.970339+00	2026-01-12 22:55:42.970339+00
+242c7600-aa4f-4a05-9580-d83458e155fc	660abf11-d556-4c6f-8c22-d2e79a1f054a	test123	{"time": 1769613709331, "blocks": [], "version": "2.31.1"}	\N	draft	{}	de	0	0	\N	\N	\N	2026-01-28 15:21:49.35476+00	2026-01-28 15:21:49.35476+00
+fb6f4e7c-bb21-4c8d-9d7a-83c5205aef1e	660abf11-d556-4c6f-8c22-d2e79a1f054a	Unbenannt	{"time": 1769613763093, "blocks": [{"id": "BOTSdHaV98", "data": {"text": "Hallo Lorem ipsum"}, "type": "paragraph"}], "version": "2.31.1"}	\N	draft	{}	de	3	1	\N	\N	\N	2026-01-28 15:22:43.121053+00	2026-01-28 15:22:43.121053+00
 \.
 
 
@@ -651,5 +653,5 @@ ALTER TABLE ONLY public.sessions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict nHuBcvM8zO1sYgZeWBp9l5jfDrMffIt1DVKbVZgkrDupNkEaXFbNle3zXnUiqmh
+\unrestrict 1v2IvTy1GaJd8zR4dXg5cyOpOQiyKPWRH94P9bZrQrpO16lg3585JFdYFLHxbv8
 
