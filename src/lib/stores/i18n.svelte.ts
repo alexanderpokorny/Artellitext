@@ -77,6 +77,8 @@ export const translations = {
 		'editor.addTag': 'Tag hinzufügen',
 		'editor.references': 'Referenzen',
 		'editor.marginalia': 'Marginalie',
+		'editor.fullscreen': 'Vollbild',
+		'editor.exitFullscreen': 'Vollbild beenden',
 		
 		// Literature
 		'literature.title': 'Bibliothek',
@@ -206,6 +208,8 @@ export const translations = {
 		'editor.addTag': 'Add tag',
 		'editor.references': 'References',
 		'editor.marginalia': 'Marginalia',
+		'editor.fullscreen': 'Fullscreen',
+		'editor.exitFullscreen': 'Exit fullscreen',
 		
 		// Literature
 		'literature.title': 'Library',
@@ -335,6 +339,8 @@ export const translations = {
 		'editor.addTag': 'Ajouter un tag',
 		'editor.references': 'Références',
 		'editor.marginalia': 'Marginalia',
+		'editor.fullscreen': 'Plein écran',
+		'editor.exitFullscreen': 'Quitter le plein écran',
 		
 		// Literature
 		'literature.title': 'Bibliothèque',
@@ -464,6 +470,8 @@ export const translations = {
 		'editor.addTag': 'Añadir etiqueta',
 		'editor.references': 'Referencias',
 		'editor.marginalia': 'Marginalia',
+		'editor.fullscreen': 'Pantalla completa',
+		'editor.exitFullscreen': 'Salir de pantalla completa',
 		
 		// Literature
 		'literature.title': 'Biblioteca',
@@ -593,6 +601,8 @@ export const translations = {
 		'editor.addTag': 'Aggiungi tag',
 		'editor.references': 'Riferimenti',
 		'editor.marginalia': 'Marginalia',
+		'editor.fullscreen': 'Schermo intero',
+		'editor.exitFullscreen': 'Esci da schermo intero',
 		
 		// Literature
 		'literature.title': 'Biblioteca',

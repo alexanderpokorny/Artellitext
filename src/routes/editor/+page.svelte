@@ -24,6 +24,12 @@
 	let tags = $state<string[]>([]);
 	let newTag = $state('');
 	let showReferencePanel = $state(false);
+	let isFullscreen = $state(false);
+	
+	// Toggle fullscreen mode
+	function toggleFullscreen() {
+		isFullscreen = !isFullscreen;
+	}
 	
 	// Initialize Editor.js on mount
 	onMount(() => {
@@ -201,12 +207,16 @@
 			event.preventDefault();
 			save();
 		}
+		// Escape exits fullscreen
+		if (event.key === 'Escape' && isFullscreen) {
+			isFullscreen = false;
+		}
 	}
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="editor-page">
+<div class="editor-page" class:fullscreen={isFullscreen}>
 	<!-- Editor header -->
 	<header class="editor-header">
 		<div class="header-left">
@@ -248,6 +258,37 @@
 			</button>
 			
 			<button type="button" class="btn btn-ghost" onclick={() => showReferencePanel = !showReferencePanel}>
+				{i18n.t('editor.references')}
+			</button>
+			
+			<!-- Fullscreen toggle button -->
+			<button 
+				type="button" 
+				class="btn btn-icon fullscreen-btn" 
+				onclick={toggleFullscreen}
+				title={isFullscreen ? i18n.t('editor.exitFullscreen') : i18n.t('editor.fullscreen')}
+				aria-label={isFullscreen ? i18n.t('editor.exitFullscreen') : i18n.t('editor.fullscreen')}
+			>
+				{#if isFullscreen}
+					<!-- Minimize icon -->
+					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M8 3v3a2 2 0 0 1-2 2H3" />
+						<path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+						<path d="M3 16h3a2 2 0 0 1 2 2v3" />
+						<path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+					</svg>
+				{:else}
+					<!-- Maximize icon -->
+					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M8 3H5a2 2 0 0 0-2 2v3" />
+						<path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+						<path d="M3 16v3a2 2 0 0 0 2 2h3" />
+						<path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+					</svg>
+				{/if}
+			</button>
+			
+			<button type="button" class="btn btn-primary" onclick={save}>>
 				{i18n.t('editor.references')}
 			</button>
 			
@@ -331,6 +372,48 @@
 		height: calc(100vh - var(--header-height) - var(--status-bar-height));
 		margin: calc(-1 * var(--site-padding));
 		background: var(--color-bg-elevated);
+		transition: all var(--transition-normal);
+	}
+	
+	/* Fullscreen mode */
+	.editor-page.fullscreen {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 100vh;
+		margin: 0;
+		z-index: var(--z-modal);
+	}
+	
+	.editor-page.fullscreen .marginalia-column,
+	.editor-page.fullscreen .tags-column {
+		display: none;
+	}
+	
+	.editor-page.fullscreen .editor-layout {
+		grid-template-columns: 1fr;
+	}
+	
+	.editor-page.fullscreen .editor-main {
+		padding: var(--space-8) var(--space-12);
+	}
+	
+	/* Fullscreen button */
+	.fullscreen-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		height: 36px;
+		padding: 0;
+		color: var(--color-text-secondary);
+	}
+	
+	.fullscreen-btn:hover {
+		color: var(--color-text);
+		background: var(--color-bg-sunken);
 	}
 	
 	/* Editor header */
