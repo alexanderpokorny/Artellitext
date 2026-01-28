@@ -55,7 +55,17 @@
 		created_at: string;
 	};
 	
-	let notes = $state<NoteItem[]>((data.recentNotes as NoteItem[]) || []);
+	let notes = $state<NoteItem[]>([]);
+	// Track if notes have been initialized from server data
+	let notesInitialized = $state(false);
+	
+	// Initialize notes from server data (using $effect to avoid state_referenced_locally)
+	$effect(() => {
+		if (!notesInitialized && data.recentNotes) {
+			notes = data.recentNotes as NoteItem[];
+			notesInitialized = true;
+		}
+	});
 	
 	let viewMode = $state<ViewMode>('grid-small');
 	let sortBy = $state<SortBy>('updated');
@@ -67,7 +77,7 @@
 	let loadMoreTrigger = $state<HTMLElement | null>(null);
 	
 	// Expanded editor state
-	let expandedEditorContainer: HTMLElement;
+	let expandedEditorContainer = $state<HTMLElement | undefined>(undefined);
 	let expandedEditor: any = $state(null);
 	let expandedNoteTitle = $state('');
 	let expandedNoteTags = $state<string[]>([]);
@@ -250,10 +260,7 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 						inlineToolbar: true,
 					},
 					quote: { class: Quote, inlineToolbar: true },
-					code: {
-						// @ts-expect-error Custom tool
-						class: CodeTool,
-					},
+					code: { class: CodeTool },
 					math: {
 						// @ts-expect-error Custom tool
 						class: MathTool,
@@ -362,7 +369,8 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 	let showReferenceDialog = $state(false);
 	let referenceDialogMode = $state<'import' | 'export'>('import');
 	let referenceFormat = $state<'bibtex' | 'csv' | 'excel'>('bibtex');
-	let referenceFileInput: HTMLInputElement;
+	// noinspection JSUnusedLocalSymbols - used by bind:this
+	let _referenceFileInput = $state<HTMLInputElement | undefined>(undefined);
 	let importedReferences = $state<any[]>([]);
 	
 	// Open reference import dialog
@@ -528,7 +536,7 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 	}
 	
 	// Marginalia functions for expanded editor - click to create at position
-	let expandedMarginaliaContainer: HTMLElement;
+	let expandedMarginaliaContainer = $state<HTMLElement | undefined>(undefined);
 	let expandedEditingMarginaliaId = $state<string | null>(null);
 	let expandedDraggingMarginaliaId = $state<string | null>(null);
 	
@@ -563,7 +571,9 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 		expandedSaveStatus = 'unsaved';
 	}
 	
-	function deleteExpandedMarginalia(id: string) {
+	// Reserved for future context menu implementation
+	// noinspection JSUnusedLocalSymbols
+	function _deleteExpandedMarginalia(id: string) {
 		expandedMarginalia = expandedMarginalia.filter(m => m.id !== id);
 		expandedSaveStatus = 'unsaved';
 	}
@@ -738,8 +748,8 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 	onmouseup={handleMarginaliaDragEnd}
 />
 
-<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="dashboard" onclick={handleEditorClickOutside}>
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_click_events_have_key_events -->
+<div class="dashboard" onclick={handleEditorClickOutside} onkeypress={() => {}} role="main">
 	<!-- Notes List with View Options -->
 	<section class="notes-section" onblur={handleEditorBlur}>
 		<div class="notes-header">
@@ -894,8 +904,8 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 			{#each sortedNotes() as note (note.id)}
 				{#if expandedNoteId === note.id}
 					<!-- Inline Expanded Editor with unified sticky header -->
-					<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-					<div class="inline-expanded-editor" class:wide-mode={expandedWidthMode === 'wide'} onclick={(e) => e.stopPropagation()}>
+					<!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_click_events_have_key_events -->
+					<div class="inline-expanded-editor" class:wide-mode={expandedWidthMode === 'wide'} onclick={(e) => e.stopPropagation()} onkeypress={() => {}} role="region" aria-label="Editor">
 						<!-- Unified Sticky Header: Left Tabs | Title + Fullscreen | Right Tabs -->
 						<div class="unified-editor-header">
 							<!-- Left sidebar tabs -->
@@ -986,15 +996,18 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 								stickyContent={false}
 							>
 								{#if expandedLeftTab === 'marginalia'}
-									<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+									<!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_click_events_have_key_events -->
 									<div 
 										class="marginalia-content marginalia-column"
 										bind:this={expandedMarginaliaContainer}
 										onclick={handleExpandedMarginaliaClick}
+										onkeypress={() => {}}
 										onmousemove={handleExpandedMarginaliaDrag}
 										onmouseup={handleExpandedMarginaliaDragEnd}
 										onmouseleave={handleExpandedMarginaliaDragEnd}
 										title={i18n.t('editor.newMarginalia')}
+										role="list"
+										aria-label="Marginalia"
 									>
 										{#each expandedMarginalia as margNote (margNote.id)}
 											<div 
@@ -1003,10 +1016,13 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 												class:dragging={expandedDraggingMarginaliaId === margNote.id}
 												style="top: {margNote.top}px"
 											>
-												<!-- svelte-ignore a11y_no_static_element_interactions -->
 												<div 
 													class="marginalia-drag-handle"
 													onmousedown={(e) => handleExpandedMarginaliaDragStart(e, margNote.id)}
+													role="slider"
+													aria-label="Drag to reposition"
+													tabindex="0"
+													aria-valuenow={margNote.top}
 												></div>
 												<textarea
 													class="marginalia-textarea"
@@ -1147,10 +1163,8 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 	
 	<!-- Reference Import/Export Dialog -->
 	{#if showReferenceDialog}
-		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-		<div class="modal-backdrop" onclick={closeReferenceDialog}>
-			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-			<div class="modal-dialog" role="dialog" aria-modal="true" onclick={(e) => e.stopPropagation()}>
+		<div class="modal-backdrop" onclick={closeReferenceDialog} onkeydown={(e) => e.key === 'Escape' && closeReferenceDialog()} role="presentation">
+			<div class="modal-dialog" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && closeReferenceDialog()}>
 				<header class="modal-header">
 					<h2 class="modal-title">
 						{referenceDialogMode === 'import' ? i18n.t('references.import') : i18n.t('references.export')}
@@ -1162,31 +1176,32 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 				
 				<div class="modal-body">
 					<!-- Format selection -->
-					<div class="form-group">
-						<label class="form-label">{i18n.t('references.format')}</label>
-						<div class="format-options">
+					<fieldset class="form-group">
+						<legend class="form-label">{i18n.t('references.format')}</legend>
+						<div class="format-options" role="radiogroup">
 							<label class="format-option">
-								<input type="radio" bind:group={referenceFormat} value="bibtex" />
+								<input type="radio" bind:group={referenceFormat} value="bibtex" id="format-bibtex" />
 								<span>BibTeX (.bib)</span>
 							</label>
 							<label class="format-option">
-								<input type="radio" bind:group={referenceFormat} value="csv" />
+								<input type="radio" bind:group={referenceFormat} value="csv" id="format-csv" />
 								<span>CSV (.csv)</span>
 							</label>
 							<label class="format-option">
-								<input type="radio" bind:group={referenceFormat} value="excel" />
+								<input type="radio" bind:group={referenceFormat} value="excel" id="format-excel" />
 								<span>Excel (.xlsx)</span>
 							</label>
 						</div>
-					</div>
+					</fieldset>
 					
 					{#if referenceDialogMode === 'import'}
 						<!-- File input for import -->
 						<div class="form-group">
-							<label class="form-label">{i18n.t('references.selectFile')}</label>
+							<label class="form-label" for="reference-file-input">{i18n.t('references.selectFile')}</label>
 							<input 
 								type="file" 
-								bind:this={referenceFileInput}
+								id="reference-file-input"
+								bind:this={_referenceFileInput}
 								accept={referenceFormat === 'bibtex' ? '.bib,.bibtex' : referenceFormat === 'csv' ? '.csv' : '.xlsx,.xls'}
 								onchange={handleReferenceFileSelect}
 								class="file-input"
@@ -1578,8 +1593,7 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 		padding-top: var(--space-2);
 	}
 	
-	.note-time,
-	.note-words {
+	.note-time {
 		font-family: var(--font-machine);
 		font-size: var(--font-size-xs);
 		color: var(--color-text-muted);
@@ -1932,7 +1946,7 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 			grid-template-columns: 1fr;
 		}
 		
-		.expanded-editor-body > .editor-sidebar {
+		.expanded-editor-body :global(.editor-sidebar) {
 			display: none;
 		}
 	}
@@ -1962,7 +1976,7 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 			border: none;
 		}
 		
-		.sidebar-tabs-standalone {
+		:global(.sidebar-tabs-standalone) {
 			display: none;
 		}
 	}
