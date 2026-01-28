@@ -3,6 +3,7 @@
  */
 
 import type { PageServerLoad } from './$types';
+import { redirect } from '@sveltejs/kit';
 import { query } from '$lib/server/db';
 import type { SessionUser } from '$lib/types';
 
@@ -10,12 +11,9 @@ export const load: PageServerLoad = async ({ parent }) => {
 	const parentData = await parent();
 	const user = parentData.user as SessionUser | null;
 	
-	// If not logged in, return empty data
+	// If not logged in, redirect to auth
 	if (!user) {
-		return {
-			recentNotes: [],
-			stats: { notes: 0, documents: 0 },
-		};
+		throw redirect(302, '/auth');
 	}
 	
 	// Fetch recent notes for the user

@@ -116,8 +116,8 @@
 	<meta name="description" content="Artellico - Kognitive Denkplattform für akademisches Consulting und Wissensmanagement" />
 </svelte:head>
 
-<!-- Auth routes: Render only children (standalone page) -->
-{#if isAuthRoute}
+<!-- Auth routes OR no user: Render only children (standalone page / loading) -->
+{#if isAuthRoute || !data.user}
 	{@render children()}
 {:else}
 <!-- ==========================================

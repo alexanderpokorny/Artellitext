@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict VZTu1MSo9pjIjD4m3H8oXqP5ia6e5A1IhEdaRHpNVZ5iUVNSaOaVkkTrHDAlrgR
+\restrict EQ1an2z5ODEYtCYOEYXhFUdbFW4MKCJnSxMSeYu0HM9KVWS3UI5PbHncmvF4EYP
 
 -- Dumped from database version 17.7 (Debian 17.7-3.pgdg12+1)
 -- Dumped by pg_dump version 17.7 (Debian 17.7-3.pgdg12+1)
@@ -336,6 +336,7 @@ COPY public.literature (id, user_id, document_id, csl_json, bibtex, title, autho
 COPY public.notes (id, user_id, title, content, summary, status, tags, language, word_count, reading_time, difficulty, location, embedding, created_at, updated_at) FROM stdin;
 00000000-1000-0000-0000-000000000001	00000000-0000-0000-0000-000000000001	Willkommen bei Artellitext	{"type": "doc", "content": [{"type": "heading", "attrs": {"level": 1}, "content": [{"text": "Willkommen bei Artellitext", "type": "text"}]}, {"type": "paragraph", "content": [{"text": "Artellitext ist dein intelligenter Schreibassistent mit ", "type": "text"}, {"text": "Offline-First", "type": "text", "marks": [{"type": "bold"}]}, {"text": " Architektur und ", "type": "text"}, {"text": "KI-Unterstützung", "type": "text", "marks": [{"type": "bold"}]}, {"text": ".", "type": "text"}]}, {"type": "heading", "attrs": {"level": 2}, "content": [{"text": "Features", "type": "text"}]}, {"type": "bulletList", "content": [{"type": "listItem", "content": [{"type": "paragraph", "content": [{"text": "Block-basierter Editor", "type": "text"}]}]}, {"type": "listItem", "content": [{"type": "paragraph", "content": [{"text": "PDF & EPUB Reader", "type": "text"}]}]}, {"type": "listItem", "content": [{"type": "paragraph", "content": [{"text": "Literaturverwaltung", "type": "text"}]}]}, {"type": "listItem", "content": [{"type": "paragraph", "content": [{"text": "KI-gestützte Textanalyse", "type": "text"}]}]}]}]}	\N	published	{welcome,tutorial,getting-started}	de	42	0	\N	\N	\N	2026-01-28 14:07:11.214843+00	2026-01-28 14:07:11.214843+00
 00000000-1000-0000-0000-000000000002	00000000-0000-0000-0000-000000000001	Meine erste wissenschaftliche Notiz	{"type": "doc", "content": [{"type": "heading", "attrs": {"level": 1}, "content": [{"text": "Forschungsnotizen", "type": "text"}]}, {"type": "paragraph", "content": [{"text": "Diese Notiz enthält meine ersten Gedanken zum Thema...", "type": "text"}]}]}	\N	draft	{research,draft}	de	12	0	\N	\N	\N	2026-01-28 14:07:11.214843+00	2026-01-28 14:07:11.214843+00
+0395ecd5-0483-435f-b56b-04b4adea3df0	660abf11-d556-4c6f-8c22-d2e79a1f054a	Unbenannt	{"time": 1768258542895, "blocks": [{"id": "hXaZb7HNwm", "data": {"text": "dsjfdsfksdfj"}, "type": "paragraph"}, {"id": "3Y7ISBkp7g", "data": {"text": "Hallo", "caption": "", "alignment": "left"}, "type": "quote"}, {"id": "3PQ3LXtpJ2", "data": {"text": "fasdfsfdsfs"}, "type": "paragraph"}], "version": "2.31.1"}	\N	draft	{}	de	3	0	\N	\N	\N	2026-01-12 22:55:42.970339+00	2026-01-12 22:55:42.970339+00
 \.
 
 
@@ -344,6 +345,7 @@ COPY public.notes (id, user_id, title, content, summary, status, tags, language,
 --
 
 COPY public.sessions (id, user_id, token, ip_address, user_agent, expires_at, created_at) FROM stdin;
+89698c57-0d61-4c35-9b5f-da79a858d4a7	660abf11-d556-4c6f-8c22-d2e79a1f054a	ae3fa4c89f41c3ba1dc29f7b9f166be9f17a33be416e68948a029a5d6dce781e	::1	Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	2026-02-27 14:42:47.617+00	2026-01-28 14:42:47.617952+00
 \.
 
 
@@ -354,6 +356,7 @@ COPY public.sessions (id, user_id, token, ip_address, user_agent, expires_at, cr
 COPY public.users (id, email, username, password_hash, display_name, avatar_url, role, subscription_tier, subscription_expires_at, language, theme, email_verified, settings, created_at, updated_at) FROM stdin;
 00000000-0000-0000-0000-000000000001	demo@artellitext.app	demo	bf6f4463f0a10233d541fb3e9eb011ab:f946034cede66c436fe1b29f5f0f1cda1f7d8fe90c9223fbfb26846de57a5a7c908a35afad2b5619eae943513c8db12fd2235172905be7738171f2bee3203c50	Demo User	\N	user	pro	\N	de	auto	t	{"editor_mode": "rich", "onboarding_completed": true}	2026-01-28 14:07:11.210302+00	2026-01-28 14:36:12.774969+00
 00000000-0000-0000-0000-000000000002	admin@artellitext.app	admin	dee1e6053f56e32fc1cc1fb31aa4b69f:54f504856a3abcae95134fe186eb47ef6b055bfe48d10bf63f1040f90152909d50599f5d2174deb07ed3f59b360ced807b6b51254073fd77541a21ae51aabf79	Administrator	\N	admin	lifetime	\N	de	auto	t	{"onboarding_completed": true}	2026-01-28 14:07:11.213194+00	2026-01-28 14:36:17.40651+00
+660abf11-d556-4c6f-8c22-d2e79a1f054a	alexander@pokorny.me	alexander	257fcf8e3c3579c52abef7bca223c2b6:53a2eecb5bdccb078a6b32ebbdf54f5c1b3d8b04b1570ef4bdd10616fe5740e5028c7d3c0c0ebf0a8d75fae2f0fc13ed42053c0ff6210c270d2ecc6435e23e4d	Alexander	\N	admin	lifetime	\N	de	auto	f	{}	2026-01-12 00:17:06.72241+00	2026-01-12 00:18:08.292399+00
 \.
 
 
@@ -648,5 +651,5 @@ ALTER TABLE ONLY public.sessions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict VZTu1MSo9pjIjD4m3H8oXqP5ia6e5A1IhEdaRHpNVZ5iUVNSaOaVkkTrHDAlrgR
+\unrestrict EQ1an2z5ODEYtCYOEYXhFUdbFW4MKCJnSxMSeYu0HM9KVWS3UI5PbHncmvF4EYP
 
