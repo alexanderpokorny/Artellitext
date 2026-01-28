@@ -6,7 +6,6 @@
 
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getSession } from '$lib/server/session';
 import { query } from '$lib/server/db';
 import { fileExists } from '$lib/server/storage';
 
@@ -15,9 +14,8 @@ import { fileExists } from '$lib/server/storage';
  * Confirm that a presigned URL upload has completed
  * Changes status from 'processing' to 'ready'
  */
-export const POST: RequestHandler = async ({ cookies, params }) => {
-	const session = await getSession(cookies);
-	if (!session?.user) {
+export const POST: RequestHandler = async ({ locals, params }) => {
+	if (!locals.user) {
 		throw error(401, 'Nicht angemeldet');
 	}
 
@@ -25,7 +23,7 @@ export const POST: RequestHandler = async ({ cookies, params }) => {
 
 	try {
 		// Get document info
-		const result = await query(
+		const result = await query<{ user_id: string; storage_path: string; status: string }>(
 			`SELECT user_id, storage_path, status FROM documents WHERE id = $1`,
 			[id]
 		);
@@ -37,7 +35,7 @@ export const POST: RequestHandler = async ({ cookies, params }) => {
 		const document = result.rows[0];
 
 		// Check ownership
-		if (document.user_id !== session.user.id) {
+		if (document.user_id !== locals.user.id) {
 			throw error(403, 'Keine Berechtigung');
 		}
 

@@ -312,6 +312,13 @@ sudo docker exec pgvector-db psql -U postgres -d Artellitext -c "SELECT column_n
 3. Bei komplexen Features: Sub-Issues oder Checklisten anlegen
 4. Issue-Nummer in Commit-Message referenzieren
 
+### Sprint-Issues
+> **WICHTIG**: Sprint-Issues werden **NUR vom Nutzer explizit geschlossen**, niemals automatisch durch Copilot.
+
+- Sprints updaten mit erledigten Tasks: ✅ erlaubt
+- Sprint-Body mit Fortschritt aktualisieren: ✅ erlaubt
+- Sprint schließen (`gh issue close`): ❌ **VERBOTEN** ohne explizite Anweisung
+
 ### Commit-Messages mit Issue-Referenz
 ```bash
 # Format:

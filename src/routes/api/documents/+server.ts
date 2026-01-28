@@ -7,11 +7,10 @@
 
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getSession } from '$lib/server/session';
-import { query, sql } from '$lib/server/db';
+import { query } from '$lib/server/db';
 import {
 	uploadFile,
-	generatePresignedUploadUrl,
+	getPresignedUploadUrl,
 	getStorageMode,
 	deleteFile
 } from '$lib/server/storage';
@@ -36,9 +35,8 @@ const ALLOWED_TYPES = [
  * GET /api/documents
  * List all documents for the current user
  */
-export const GET: RequestHandler = async ({ cookies, url }) => {
-	const session = await getSession(cookies);
-	if (!session?.user) {
+export const GET: RequestHandler = async ({ locals, url }) => {
+	if (!locals.user) {
 		throw error(401, 'Nicht angemeldet');
 	}
 
@@ -53,13 +51,13 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 			 WHERE user_id = $1 AND status = $2
 			 ORDER BY created_at DESC
 			 LIMIT $3 OFFSET $4`,
-			[session.user.id, status, limit, offset]
+			[locals.user.id, status, limit, offset]
 		);
 
 		// Get total count
-		const countResult = await query(
+		const countResult = await query<{ total: string }>(
 			`SELECT COUNT(*) as total FROM documents WHERE user_id = $1 AND status = $2`,
-			[session.user.id, status]
+			[locals.user.id, status]
 		);
 
 		return json({
@@ -82,9 +80,8 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
  * 1. Direct upload (multipart/form-data)
  * 2. Presigned URL request (application/json with { filename, mimeType, size })
  */
-export const POST: RequestHandler = async ({ cookies, request }) => {
-	const session = await getSession(cookies);
-	if (!session?.user) {
+export const POST: RequestHandler = async ({ locals, request }) => {
+	if (!locals.user) {
 		throw error(401, 'Nicht angemeldet');
 	}
 
@@ -92,12 +89,12 @@ export const POST: RequestHandler = async ({ cookies, request }) => {
 
 	// Mode 1: Request presigned URL for client-side upload
 	if (contentType.includes('application/json')) {
-		return handlePresignedUrlRequest(request, session.user.id);
+		return handlePresignedUrlRequest(request, locals.user.id);
 	}
 
 	// Mode 2: Direct upload via multipart/form-data
 	if (contentType.includes('multipart/form-data')) {
-		return handleDirectUpload(request, session.user.id);
+		return handleDirectUpload(request, locals.user.id);
 	}
 
 	throw error(400, 'Ungültiger Content-Type');
@@ -136,7 +133,7 @@ async function handlePresignedUrlRequest(request: Request, userId: string) {
 		);
 
 		// Generate presigned URL
-		const uploadUrl = await generatePresignedUploadUrl(storagePath, mimeType, 3600);
+		const uploadUrl = await getPresignedUploadUrl(storagePath, mimeType, 3600);
 
 		return json({
 			documentId,

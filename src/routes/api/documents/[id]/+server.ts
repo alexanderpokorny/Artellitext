@@ -8,12 +8,10 @@
 
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getSession } from '$lib/server/session';
 import { query } from '$lib/server/db';
 import {
-	getFile,
 	deleteFile,
-	generatePresignedDownloadUrl,
+	getPresignedDownloadUrl,
 	getStorageMode
 } from '$lib/server/storage';
 
@@ -21,9 +19,8 @@ import {
  * GET /api/documents/[id]
  * Get document details and download URL
  */
-export const GET: RequestHandler = async ({ cookies, params, url }) => {
-	const session = await getSession(cookies);
-	if (!session?.user) {
+export const GET: RequestHandler = async ({ locals, params, url }) => {
+	if (!locals.user) {
 		throw error(401, 'Nicht angemeldet');
 	}
 
@@ -46,14 +43,14 @@ export const GET: RequestHandler = async ({ cookies, params, url }) => {
 		const document = result.rows[0];
 
 		// Check ownership
-		if (document.user_id !== session.user.id) {
+		if (document.user_id !== locals.user.id) {
 			throw error(403, 'Keine Berechtigung');
 		}
 
 		// Generate download URL if requested
 		let downloadUrl: string | null = null;
 		if (download && document.storage_path) {
-			downloadUrl = await generatePresignedDownloadUrl(
+			downloadUrl = await getPresignedDownloadUrl(
 				document.storage_path,
 				3600, // 1 hour
 				document.filename
@@ -87,9 +84,8 @@ export const GET: RequestHandler = async ({ cookies, params, url }) => {
  * PATCH /api/documents/[id]
  * Update document metadata
  */
-export const PATCH: RequestHandler = async ({ cookies, params, request }) => {
-	const session = await getSession(cookies);
-	if (!session?.user) {
+export const PATCH: RequestHandler = async ({ locals, params, request }) => {
+	if (!locals.user) {
 		throw error(401, 'Nicht angemeldet');
 	}
 
@@ -99,7 +95,7 @@ export const PATCH: RequestHandler = async ({ cookies, params, request }) => {
 
 	try {
 		// Verify ownership
-		const checkResult = await query(
+		const checkResult = await query<{ user_id: string }>(
 			`SELECT user_id FROM documents WHERE id = $1`,
 			[id]
 		);
@@ -108,7 +104,7 @@ export const PATCH: RequestHandler = async ({ cookies, params, request }) => {
 			throw error(404, 'Dokument nicht gefunden');
 		}
 
-		if (checkResult.rows[0].user_id !== session.user.id) {
+		if (checkResult.rows[0].user_id !== locals.user.id) {
 			throw error(403, 'Keine Berechtigung');
 		}
 
@@ -161,9 +157,8 @@ export const PATCH: RequestHandler = async ({ cookies, params, request }) => {
  * DELETE /api/documents/[id]
  * Delete document and its file from storage
  */
-export const DELETE: RequestHandler = async ({ cookies, params }) => {
-	const session = await getSession(cookies);
-	if (!session?.user) {
+export const DELETE: RequestHandler = async ({ locals, params }) => {
+	if (!locals.user) {
 		throw error(401, 'Nicht angemeldet');
 	}
 
@@ -171,7 +166,7 @@ export const DELETE: RequestHandler = async ({ cookies, params }) => {
 
 	try {
 		// Get document info
-		const result = await query(
+		const result = await query<{ user_id: string; storage_path: string | null }>(
 			`SELECT user_id, storage_path FROM documents WHERE id = $1`,
 			[id]
 		);
@@ -183,7 +178,7 @@ export const DELETE: RequestHandler = async ({ cookies, params }) => {
 		const document = result.rows[0];
 
 		// Check ownership
-		if (document.user_id !== session.user.id) {
+		if (document.user_id !== locals.user.id) {
 			throw error(403, 'Keine Berechtigung');
 		}
 

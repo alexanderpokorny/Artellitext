@@ -28,7 +28,6 @@ export default class MermaidTool {
 	private wrapper: HTMLElement | null = null;
 	private input: HTMLTextAreaElement | null = null;
 	private preview: HTMLElement | null = null;
-	private api: API;
 	private config: MermaidConfig;
 	private readOnly: boolean;
 	private debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -50,12 +49,11 @@ export default class MermaidTool {
 		return true;
 	}
 
-	constructor({ data, api, config, readOnly }: { data: MermaidData; api: API; config: MermaidConfig; readOnly: boolean }) {
+	constructor({ data, config, readOnly }: { data: MermaidData; api?: API; config: MermaidConfig; readOnly: boolean }) {
 		this.data = {
 			code: data.code || this.getDefaultDiagram(),
 			caption: data.caption || '',
 		};
-		this.api = api;
 		this.config = config;
 		this.readOnly = readOnly;
 		this.instanceId = ++MermaidTool.instanceCounter;
@@ -69,13 +67,13 @@ export default class MermaidTool {
 		});
 	}
 
-	private getTheme(): string {
+	private getTheme(): 'dark' | 'default' | 'base' | 'forest' | 'neutral' {
 		// Detect dark mode
 		if (typeof document !== 'undefined') {
 			const isDark = document.documentElement.classList.contains('dark');
 			return isDark ? 'dark' : 'neutral';
 		}
-		return this.config.theme || 'neutral';
+		return (this.config.theme as 'dark' | 'default' | 'base' | 'forest' | 'neutral') || 'neutral';
 	}
 
 	private getDefaultDiagram(): string {

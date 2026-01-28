@@ -38,7 +38,7 @@
 			const Code = (await import('@editorjs/code')).default;
 			
 			// Import custom tools
-			const { MathTool, MermaidTool, CitationTool } = await import('$lib/editor/tools');
+			const { MathTool, MermaidTool, CitationTool, BibliographyTool } = await import('$lib/editor/tools');
 			
 			// Import KaTeX CSS
 			await import('katex/dist/katex.min.css');
@@ -92,6 +92,16 @@
 							availableStyles: ['apa', 'ieee', 'chicago-author-date', 'harvard1', 'vancouver'],
 						},
 					},
+					// Bibliography (auto-generated from citations)
+					bibliography: {
+						// @ts-expect-error Custom tool
+						class: BibliographyTool,
+						config: {
+							defaultStyle: 'apa',
+							availableStyles: ['apa', 'ieee', 'chicago-author-date', 'harvard1', 'vancouver'],
+							defaultTitle: 'References',
+						},
+					},
 				},
 				onChange: async () => {
 					saveStatus = 'unsaved';
@@ -106,6 +116,33 @@
 			editor?.destroy();
 		};
 	});
+	
+	// Show BibTeX import dialog
+	async function openBibImport() {
+		const { showBibImportDialog } = await import('$lib/editor/tools');
+		showBibImportDialog((citations) => {
+			// Save imported citations to literature database
+			citations.forEach(async (citation) => {
+				try {
+					await fetch('/api/literature', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							cslJson: citation.cslJson,
+							bibtex: citation.bibtex,
+							title: citation.title,
+							authors: citation.authors,
+							year: citation.year,
+						}),
+					});
+				} catch (err) {
+					console.error('Failed to save citation:', err);
+				}
+			});
+			// Notify user
+			alert(`${citations.length} citation(s) imported successfully.`);
+		});
+	}
 	
 	// Calculate word count and reading time
 	function updateWordCount() {
@@ -200,6 +237,15 @@
 					●
 				{/if}
 			</span>
+			
+			<button type="button" class="btn btn-ghost" onclick={openBibImport} title="Import BibTeX references">
+				<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;">
+					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+					<polyline points="17 8 12 3 7 8"/>
+					<line x1="12" y1="3" x2="12" y2="15"/>
+				</svg>
+				BibTeX
+			</button>
 			
 			<button type="button" class="btn btn-ghost" onclick={() => showReferencePanel = !showReferencePanel}>
 				{i18n.t('editor.references')}

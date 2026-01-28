@@ -33,7 +33,6 @@ const DEFAULT_STYLES = ['apa', 'ieee', 'chicago-author-date', 'harvard1', 'vanco
 export default class CitationTool {
 	private data: CitationData;
 	private wrapper: HTMLElement | null = null;
-	private api: API;
 	private config: CitationConfig;
 	private readOnly: boolean;
 
@@ -52,14 +51,13 @@ export default class CitationTool {
 		return false;
 	}
 
-	constructor({ data, api, config, readOnly }: { data: CitationData; api: API; config: CitationConfig; readOnly: boolean }) {
+	constructor({ data, config, readOnly }: { data: CitationData; api?: API; config: CitationConfig; readOnly: boolean }) {
 		this.data = {
 			cslJson: data.cslJson || {},
 			key: data.key || '',
 			formattedText: data.formattedText || '',
 			style: data.style || config.defaultStyle || 'apa',
 		};
-		this.api = api;
 		this.config = {
 			defaultStyle: config.defaultStyle || 'apa',
 			availableStyles: config.availableStyles || DEFAULT_STYLES,
@@ -217,7 +215,8 @@ or paste a DOI like: 10.1000/xyz123`;
 
 	private generateKey(cslJson: Record<string, unknown>): string {
 		const author = (cslJson.author as Array<{ family?: string }>)?.[0]?.family || 'Unknown';
-		const year = cslJson.issued?.['date-parts']?.[0]?.[0] || new Date().getFullYear();
+		const issued = cslJson.issued as { 'date-parts'?: number[][] } | undefined;
+		const year = issued?.['date-parts']?.[0]?.[0] || new Date().getFullYear();
 		return `${author}${year}`.toLowerCase().replace(/\s+/g, '');
 	}
 
