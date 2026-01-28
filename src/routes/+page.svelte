@@ -527,23 +527,68 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 		}
 	}
 	
-	// Marginalia functions for expanded editor
-	function addExpandedMarginalia() {
+	// Marginalia functions for expanded editor - click to create at position
+	let expandedMarginaliaContainer: HTMLElement;
+	let expandedEditingMarginaliaId = $state<string | null>(null);
+	let expandedDraggingMarginaliaId = $state<string | null>(null);
+	
+	function handleExpandedMarginaliaClick(e: MouseEvent) {
+		// Don't create new note if clicking existing one
+		if ((e.target as HTMLElement).closest('.marginalia-note')) return;
+		
+		const container = expandedMarginaliaContainer;
+		if (!container) return;
+		
+		const rect = container.getBoundingClientRect();
+		const clickY = e.clientY - rect.top + container.scrollTop;
+		
 		const newMarg: MarginaliaNote = {
 			id: crypto.randomUUID(),
 			blockId: '',
 			content: '',
-			top: 0,
+			top: clickY,
 			createdAt: new Date(),
 			updatedAt: new Date(),
 		};
+		
 		expandedMarginalia = [...expandedMarginalia, newMarg];
+		expandedEditingMarginaliaId = newMarg.id;
+		expandedSaveStatus = 'unsaved';
+	}
+	
+	function updateExpandedMarginaliaContent(id: string, content: string) {
+		expandedMarginalia = expandedMarginalia.map(m =>
+			m.id === id ? { ...m, content, updatedAt: new Date() } : m
+		);
 		expandedSaveStatus = 'unsaved';
 	}
 	
 	function deleteExpandedMarginalia(id: string) {
 		expandedMarginalia = expandedMarginalia.filter(m => m.id !== id);
 		expandedSaveStatus = 'unsaved';
+	}
+	
+	function handleExpandedMarginaliaDragStart(e: MouseEvent, id: string) {
+		expandedDraggingMarginaliaId = id;
+		e.preventDefault();
+	}
+	
+	function handleExpandedMarginaliaDrag(e: MouseEvent) {
+		if (!expandedDraggingMarginaliaId || !expandedMarginaliaContainer) return;
+		
+		const rect = expandedMarginaliaContainer.getBoundingClientRect();
+		const newTop = Math.max(0, e.clientY - rect.top + expandedMarginaliaContainer.scrollTop);
+		
+		expandedMarginalia = expandedMarginalia.map(m =>
+			m.id === expandedDraggingMarginaliaId ? { ...m, top: newTop, updatedAt: new Date() } : m
+		);
+	}
+	
+	function handleExpandedMarginaliaDragEnd() {
+		if (expandedDraggingMarginaliaId) {
+			expandedDraggingMarginaliaId = null;
+			expandedSaveStatus = 'unsaved';
+		}
 	}
 	
 	// Context menu helpers (for future marginalia feature)
@@ -941,39 +986,42 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 								stickyContent={false}
 							>
 								{#if expandedLeftTab === 'marginalia'}
-									<div class="marginalia-content">
-										<button 
-											type="button" 
-											class="btn btn-sm marginalia-add-btn"
-											onclick={addExpandedMarginalia}
-										>
-											<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-												<line x1="12" y1="5" x2="12" y2="19" />
-												<line x1="5" y1="12" x2="19" y2="12" />
-											</svg>
-											{i18n.t('editor.newMarginalia')}
-										</button>
+									<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+									<div 
+										class="marginalia-content marginalia-column"
+										bind:this={expandedMarginaliaContainer}
+										onclick={handleExpandedMarginaliaClick}
+										onmousemove={handleExpandedMarginaliaDrag}
+										onmouseup={handleExpandedMarginaliaDragEnd}
+										onmouseleave={handleExpandedMarginaliaDragEnd}
+										title={i18n.t('editor.newMarginalia')}
+									>
 										{#each expandedMarginalia as margNote (margNote.id)}
-											<div class="marginalia-note">
-												<button 
-													type="button" 
-													class="marginalia-delete-btn"
-													onclick={() => deleteExpandedMarginalia(margNote.id)}
-													aria-label={i18n.t('action.delete')}
-												>
-													×
-												</button>
+											<div 
+												class="marginalia-note"
+												class:editing={expandedEditingMarginaliaId === margNote.id}
+												class:dragging={expandedDraggingMarginaliaId === margNote.id}
+												style="top: {margNote.top}px"
+											>
+												<!-- svelte-ignore a11y_no_static_element_interactions -->
+												<div 
+													class="marginalia-drag-handle"
+													onmousedown={(e) => handleExpandedMarginaliaDragStart(e, margNote.id)}
+												></div>
 												<textarea
 													class="marginalia-textarea"
 													value={margNote.content}
 													placeholder={i18n.t('editor.marginalia') + '...'}
-													oninput={(e) => {
-														margNote.content = e.currentTarget.value;
-														expandedSaveStatus = 'unsaved';
-													}}
+													oninput={(e) => updateExpandedMarginaliaContent(margNote.id, e.currentTarget.value)}
+													onfocus={() => expandedEditingMarginaliaId = margNote.id}
+													onblur={() => setTimeout(() => expandedEditingMarginaliaId = null, 100)}
+													onclick={(e) => e.stopPropagation()}
 												></textarea>
 											</div>
 										{/each}
+										{#if expandedMarginalia.length === 0}
+											<p class="sidebar-empty-hint marginalia-hint">{i18n.t('editor.newMarginalia')}</p>
+										{/if}
 									</div>
 								{:else if expandedLeftTab === 'spellcheck'}
 									<div class="spellcheck-content">
@@ -1807,54 +1855,53 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 		outline: none;
 	}
 	
-	.inline-expanded-editor .marginalia-note {
-		margin-bottom: var(--space-2);
+	/* Marginalia Column in Inline Editor */
+	.inline-expanded-editor .marginalia-column {
 		position: relative;
+		min-height: 200px;
+		cursor: text;
 	}
 	
-	.inline-expanded-editor .marginalia-delete-btn {
+	.inline-expanded-editor .marginalia-note {
 		position: absolute;
-		top: 0;
+		left: 0;
 		right: 0;
-		width: 20px;
-		height: 20px;
-		padding: 0;
-		background: transparent;
-		border: none;
-		color: var(--color-text-muted);
-		cursor: pointer;
-		font-size: 16px;
-		line-height: 1;
-		opacity: 0;
+		display: flex;
+		gap: var(--space-1);
+		padding: var(--space-1);
+		background: var(--color-bg-elevated);
+		border-radius: var(--radius-sm);
+		transition: box-shadow var(--transition-fast);
+	}
+	
+	.inline-expanded-editor .marginalia-note:hover,
+	.inline-expanded-editor .marginalia-note.editing {
+		box-shadow: var(--shadow-sm);
+	}
+	
+	.inline-expanded-editor .marginalia-note.dragging {
+		opacity: 0.7;
+		cursor: grabbing;
+	}
+	
+	.inline-expanded-editor .marginalia-drag-handle {
+		width: 8px;
+		min-height: 20px;
+		cursor: grab;
+		background: var(--color-border);
+		border-radius: 2px;
+		opacity: 0.4;
 		transition: opacity var(--transition-fast);
 	}
 	
-	.inline-expanded-editor .marginalia-note:hover .marginalia-delete-btn {
-		opacity: 1;
-	}
-	
-	.inline-expanded-editor .marginalia-delete-btn:hover {
-		color: var(--color-error);
-	}
-	
-	.inline-expanded-editor .marginalia-add-btn {
-		width: 100%;
-		justify-content: center;
-		gap: var(--space-1);
-		margin-bottom: var(--space-3);
-		background: var(--color-bg-sunken);
-		border: 1px dashed var(--color-border);
-	}
-	
-	.inline-expanded-editor .marginalia-add-btn:hover {
-		background: var(--color-bg-hover);
-		border-color: var(--color-active);
+	.inline-expanded-editor .marginalia-drag-handle:hover {
+		opacity: 0.8;
 	}
 	
 	.inline-expanded-editor .marginalia-textarea {
-		width: 100%;
-		min-height: 24px;
-		padding: var(--space-1) var(--space-2);
+		flex: 1;
+		min-height: 20px;
+		padding: 0;
 		font-family: var(--font-machine);
 		font-size: var(--font-size-xs);
 		line-height: var(--line-height-relaxed);
@@ -1865,6 +1912,14 @@ let expandedRightTab = $state<'tags' | 'references' | 'stats'>('tags');
 		resize: none;
 		overflow: hidden;
 		field-sizing: content;
+	}
+	
+	.inline-expanded-editor .marginalia-hint {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		pointer-events: none;
 	}
 	
 	/* Mobile: Hide sidebars in expanded view */
