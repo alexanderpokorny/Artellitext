@@ -80,6 +80,7 @@ export const translations = {
 		'editor.addMarginalia': 'Marginalie hinzufügen',
 		'editor.newMarginalia': 'Neuer Marginaltext',
 		'editor.fullscreen': 'Vollbild',
+		'editor.shrink': 'Verkleinern',
 		'editor.exitFullscreen': 'Vollbild beenden',
 		'editor.expandWidth': 'Breite erweitern',
 		'editor.narrowWidth': 'Breite verkleinern',
@@ -163,6 +164,20 @@ export const translations = {
 		'sort.created': 'Erstellt',
 		'sort.title': 'Titel',
 		'sort.words': 'Wörter',
+		'sort.wordCount': 'Wortanzahl',
+		
+		// Pagination
+		'pagination.prev': 'Zurück',
+		'pagination.next': 'Weiter',
+		'pagination.page': 'Seite {current} von {total}',
+		
+		// Notes
+		'notes.empty': 'Noch keine Notizen vorhanden.',
+		'action.newNote': 'Neue Notiz',
+		'action.createFirst': 'Erste Notiz erstellen',
+		
+		// Stats
+		'stats.words': 'Wörter',
 		
 		// View modes
 		'view.list': 'Listenansicht',
@@ -285,6 +300,7 @@ export const translations = {
 		'editor.addMarginalia': 'Add marginalia',
 		'editor.newMarginalia': 'New marginal note',
 		'editor.fullscreen': 'Fullscreen',
+		'editor.shrink': 'Shrink',
 		'editor.exitFullscreen': 'Exit fullscreen',
 		'editor.expandWidth': 'Expand width',
 		'editor.narrowWidth': 'Narrow width',
@@ -368,6 +384,20 @@ export const translations = {
 		'sort.created': 'Created',
 		'sort.title': 'Title',
 		'sort.words': 'Words',
+		'sort.wordCount': 'Word count',
+		
+		// Pagination
+		'pagination.prev': 'Previous',
+		'pagination.next': 'Next',
+		'pagination.page': 'Page {current} of {total}',
+		
+		// Notes
+		'notes.empty': 'No notes yet.',
+		'action.newNote': 'New Note',
+		'action.createFirst': 'Create your first note',
+		
+		// Stats
+		'stats.words': 'words',
 		
 		// View modes
 		'view.list': 'List view',
@@ -490,6 +520,7 @@ export const translations = {
 		'editor.addMarginalia': 'Ajouter marginalia',
 		'editor.newMarginalia': 'Nouvelle note marginale',
 		'editor.fullscreen': 'Plein écran',
+		'editor.shrink': 'Réduire',
 		'editor.exitFullscreen': 'Quitter le plein écran',
 		'editor.expandWidth': 'Élargir',
 		'editor.narrowWidth': 'Rétrécir',
@@ -573,6 +604,20 @@ export const translations = {
 		'sort.created': 'Créé',
 		'sort.title': 'Titre',
 		'sort.words': 'Mots',
+		'sort.wordCount': 'Nombre de mots',
+		
+		// Pagination
+		'pagination.prev': 'Précédent',
+		'pagination.next': 'Suivant',
+		'pagination.page': 'Page {current} sur {total}',
+		
+		// Notes
+		'notes.empty': 'Pas encore de notes.',
+		'action.newNote': 'Nouvelle note',
+		'action.createFirst': 'Créer votre première note',
+		
+		// Stats
+		'stats.words': 'mots',
 		
 		// View modes
 		'view.list': 'Liste',
@@ -695,6 +740,7 @@ export const translations = {
 		'editor.addMarginalia': 'Añadir marginalia',
 		'editor.newMarginalia': 'Nueva nota marginal',
 		'editor.fullscreen': 'Pantalla completa',
+		'editor.shrink': 'Reducir',
 		'editor.exitFullscreen': 'Salir de pantalla completa',
 		'editor.expandWidth': 'Expandir ancho',
 		'editor.narrowWidth': 'Reducir ancho',
@@ -775,6 +821,20 @@ export const translations = {
 		'sort.created': 'Creado',
 		'sort.title': 'Título',
 		'sort.words': 'Palabras',
+		'sort.wordCount': 'Número de palabras',
+		
+		// Pagination
+		'pagination.prev': 'Anterior',
+		'pagination.next': 'Siguiente',
+		'pagination.page': 'Página {current} de {total}',
+		
+		// Notes
+		'notes.empty': 'Aún no hay notas.',
+		'action.newNote': 'Nueva nota',
+		'action.createFirst': 'Crea tu primera nota',
+		
+		// Stats
+		'stats.words': 'palabras',
 		
 		// View modes
 		'view.list': 'Lista',
@@ -897,6 +957,7 @@ export const translations = {
 		'editor.addMarginalia': 'Aggiungi marginalia',
 		'editor.newMarginalia': 'Nuova nota marginale',
 		'editor.fullscreen': 'Schermo intero',
+		'editor.shrink': 'Riduci',
 		'editor.exitFullscreen': 'Esci da schermo intero',
 		'editor.expandWidth': 'Espandi larghezza',
 		'editor.narrowWidth': 'Riduci larghezza',
@@ -980,6 +1041,20 @@ export const translations = {
 		'sort.created': 'Creato',
 		'sort.title': 'Titolo',
 		'sort.words': 'Parole',
+		'sort.wordCount': 'Numero di parole',
+		
+		// Pagination
+		'pagination.prev': 'Precedente',
+		'pagination.next': 'Successivo',
+		'pagination.page': 'Pagina {current} di {total}',
+		
+		// Notes
+		'notes.empty': 'Nessuna nota ancora.',
+		'action.newNote': 'Nuova nota',
+		'action.createFirst': 'Crea la tua prima nota',
+		
+		// Stats
+		'stats.words': 'parole',
 		
 		// View modes
 		'view.list': 'Lista',

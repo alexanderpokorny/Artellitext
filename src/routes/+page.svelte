@@ -378,8 +378,21 @@
 			return; // Focus still within section
 		}
 		
+		// Only save if there's actual content
 		if (saveStatus === 'unsaved' && quickEditor) {
-			await saveToCache();
+			const content = await quickEditor.save();
+			const hasContent = content.blocks && content.blocks.length > 0 && 
+				content.blocks.some((block: any) => {
+					const text = block.data?.text || '';
+					return text.trim().length > 0;
+				});
+			
+			if (hasContent) {
+				await saveToCache();
+			} else {
+				// No content - reset editor without saving
+				saveStatus = 'idle';
+			}
 		}
 	}
 	

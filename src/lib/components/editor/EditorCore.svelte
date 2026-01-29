@@ -365,6 +365,24 @@
 		}
 	}
 	
+	// Handle expand (inline → fullscreen) with auto-save
+	async function handleExpand() {
+		await save();
+		onExpand?.();
+	}
+	
+	// Handle shrink (fullscreen → inline) with auto-save
+	async function handleShrink() {
+		await save();
+		onClose?.();
+	}
+	
+	// Handle close (inline mode) with auto-save
+	async function handleClose() {
+		await save();
+		onClose?.();
+	}
+	
 	// Tag management
 	function addTag() {
 		if (newTag.trim() && !tags.includes(newTag.trim())) {
@@ -718,7 +736,7 @@
 					<button 
 						type="button" 
 						class="header-btn"
-						onclick={onExpand}
+						onclick={handleExpand}
 						title={i18n.t('editor.fullscreen')}
 					>
 						<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
@@ -730,29 +748,35 @@
 					</button>
 				{/if}
 				
+				<!-- Shrink button (fullscreen mode only) -->
+				{#if onClose && mode === 'fullscreen'}
+					<button 
+						type="button" 
+						class="header-btn"
+						onclick={handleShrink}
+						title={i18n.t('editor.shrink')}
+					>
+						<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M4 14h6v6" />
+							<path d="M20 10h-6V4" />
+							<path d="M14 10l7-7" />
+							<path d="M3 21l7-7" />
+						</svg>
+					</button>
+				{/if}
+				
 				<!-- Close button (inline mode) -->
 				{#if onClose && mode === 'inline'}
 					<button 
 						type="button" 
 						class="header-btn"
-						onclick={onClose}
+						onclick={handleClose}
 						title={i18n.t('action.close')}
 					>
 						<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
 							<line x1="18" y1="6" x2="6" y2="18"/>
 							<line x1="6" y1="6" x2="18" y2="18"/>
 						</svg>
-					</button>
-				{/if}
-				
-				<!-- Save button (fullscreen mode) -->
-				{#if mode === 'fullscreen' && onSave}
-					<button 
-						type="button" 
-						class="btn btn-primary btn-sm"
-						onclick={save}
-					>
-						{i18n.t('action.save')}
 					</button>
 				{/if}
 			</div>
@@ -1207,7 +1231,7 @@
 		position: relative;
 		min-height: 200px;
 		cursor: crosshair;
-		background: var(--color-bg-sunken);
+		background: transparent;
 	}
 	
 	.marginalia-note {
