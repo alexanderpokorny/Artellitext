@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict ulKsefnhz45zA265jIg8x9bV8YaNYdyIae2mMbDSgXGlj2ZZv2aYtJFUYVsNukV
+\restrict Uzxv7eXfX6iFHTX6fjA1GjjrWPAnE804V18MrtW4ZHrTWW8OJrWIeqxzRJqOIiO
 
 -- Dumped from database version 17.7 (Debian 17.7-3.pgdg12+1)
 -- Dumped by pg_dump version 17.7 (Debian 17.7-3.pgdg12+1)
@@ -264,7 +264,7 @@ CREATE TABLE public.documents (
     embedding public.vector(1536),
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT documents_status_check CHECK (((status)::text = ANY (ARRAY[('processing'::character varying)::text, ('ready'::character varying)::text, ('error'::character varying)::text, ('archived'::character varying)::text])))
+    CONSTRAINT documents_status_check CHECK (((status)::text = ANY ((ARRAY['processing'::character varying, 'ready'::character varying, 'error'::character varying, 'archived'::character varying])::text[])))
 );
 
 
@@ -356,8 +356,8 @@ CREATE TABLE public.notes (
     embedding public.vector(1536),
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT notes_language_check CHECK (((language)::text = ANY (ARRAY[('de'::character varying)::text, ('en'::character varying)::text, ('fr'::character varying)::text, ('es'::character varying)::text, ('it'::character varying)::text, ('mu'::character varying)::text]))),
-    CONSTRAINT notes_status_check CHECK (((status)::text = ANY (ARRAY[('draft'::character varying)::text, ('published'::character varying)::text, ('archived'::character varying)::text])))
+    CONSTRAINT notes_language_check CHECK (((language)::text = ANY ((ARRAY['de'::character varying, 'en'::character varying, 'fr'::character varying, 'es'::character varying, 'it'::character varying, 'mu'::character varying])::text[]))),
+    CONSTRAINT notes_status_check CHECK (((status)::text = ANY ((ARRAY['draft'::character varying, 'published'::character varying, 'archived'::character varying])::text[])))
 );
 
 
@@ -546,7 +546,6 @@ COPY public.projects (id, user_id, name, description, color, icon, settings, cre
 
 COPY public.sessions (id, user_id, token, ip_address, user_agent, expires_at, created_at) FROM stdin;
 89698c57-0d61-4c35-9b5f-da79a858d4a7	660abf11-d556-4c6f-8c22-d2e79a1f054a	ae3fa4c89f41c3ba1dc29f7b9f166be9f17a33be416e68948a029a5d6dce781e	::1	Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	2026-02-27 14:42:47.617+00	2026-01-28 14:42:47.617952+00
-ee3d87c2-5799-4d5a-b28f-61fcfb8b3efc	660abf11-d556-4c6f-8c22-d2e79a1f054a	b1b06d2a500cba7cece480d869d2c12945382116b2351c9b12e63c2e00d65ac6	::1	Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	2026-02-27 22:07:58.743+00	2026-01-28 22:07:58.744843+00
 \.
 
 
@@ -1093,5 +1092,5 @@ ALTER TABLE ONLY public.sessions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ulKsefnhz45zA265jIg8x9bV8YaNYdyIae2mMbDSgXGlj2ZZv2aYtJFUYVsNukV
+\unrestrict Uzxv7eXfX6iFHTX6fjA1GjjrWPAnE804V18MrtW4ZHrTWW8OJrWIeqxzRJqOIiO
 

@@ -374,7 +374,103 @@ gh project item-edit --project-id PVT_kwHOAPwPQ84BAP7z --id ITEM_ID --field-id P
 2. Sind Sub-Tasks nötig?
 3. Commit-Message mit Referenz vorbereiten
 
-## Zusammenfassung: Die 6 goldenen Regeln
+## 14. Session-Dokumentation in GitHub Issues (PFLICHT)
+
+### Grundprinzip
+> **KRITISCH**: Jede Chat-Session wird als Kommentar im relevanten Sprint-Issue dokumentiert.
+
+Die Session-Logs dienen dazu:
+- Gedankengänge und Entscheidungen nachvollziehbar zu machen
+- Alle Änderungen rekonstruierbar zu halten
+- Wissenstransfer zwischen Sessions zu ermöglichen
+
+### Wann dokumentieren?
+- **Am Ende jeder Session**: Vor dem finalen Commit einen Session-Log-Kommentar erstellen
+- **Bei komplexen Entscheidungen**: Technische Entscheidungen mit Begründung festhalten
+- **Bei Fehlerbehebung**: Ursache und Lösung dokumentieren
+
+### Session-Log Template
+```markdown
+## 📋 Session-Log [DATUM]
+
+### Kontext
+[1-2 Sätze: Was war das Ziel dieser Session?]
+
+### Erledigte Arbeiten
+
+#### 1. [Feature/Task Name] ✅
+- Konkrete Änderung 1
+- Konkrete Änderung 2
+- Datei: `pfad/zur/datei.ts`
+
+#### 2. [Weiteres Feature] ✅
+...
+
+### Technische Entscheidungen
+
+1. **[Entscheidung X] statt [Alternative Y]**
+   - Grund 1
+   - Grund 2
+   - Konsequenz
+
+### Korrekturen / Fixes (falls vorhanden)
+- Problem: [Beschreibung]
+- Ursache: [Warum ist es passiert?]
+- Lösung: [Was wurde geändert?]
+
+### Offene Punkte für nächste Session
+[ ] Task 1
+[ ] Task 2
+
+### Commit-Historie dieser Session
+```
+[hash] [commit message]
+[hash] [commit message]
+```
+
+### Dateien dieser Session
+- `pfad/datei.ts` (NEU)
+- `pfad/andere.ts` (erweitert)
+- `pfad/geloescht.ts` (GELÖSCHT)
+```
+
+### Konventionen
+
+1. **Emoji-Header**: Immer `📋` für Session-Logs verwenden
+2. **Datum-Format**: `DD.MM.YYYY` (deutsch)
+3. **Status-Emojis**: 
+   - ✅ für erledigte Tasks
+   - ⚠️ für teilweise erledigte Tasks
+   - ❌ für abgebrochene/verschobene Tasks
+4. **Code-Referenzen**: Dateipfade in Backticks
+5. **Issue-Referenzen**: `#123` Format für Querverweise
+
+### Welches Issue kommentieren?
+
+| Situation | Kommentar in |
+|-----------|--------------|
+| Arbeit an Sprint-Tasks | Sprint-Issue (z.B. #21, #22, #23) |
+| Einzelnes Feature | Feature-Issue direkt |
+| Bug-Fix ohne Issue | Neues Issue erstellen, dann kommentieren |
+| Übergreifende Änderungen | Alle betroffenen Issues referenzieren |
+
+### Retrospektive Dokumentation
+Falls eine Session nicht dokumentiert wurde:
+1. Git-Log analysieren: `git log --oneline --since="DATUM"`
+2. Session-Log mit "(Retrospektiv)" kennzeichnen
+3. So viele Details wie möglich rekonstruieren
+
+### Automatisierung (Empfohlen)
+Am Ende jeder Session diesen Befehl verwenden:
+```bash
+gh issue comment [SPRINT_NR] --body "$(cat <<'EOF'
+## 📋 Session-Log [DATUM]
+...
+EOF
+)"
+```
+
+## Zusammenfassung: Die 7 goldenen Regeln
 
 1. **Nicht eigenmächtig ändern** – Nur tun, was angefordert ist
 2. **Funktionierende Features nicht anfassen** – Bei Zweifeln: Rückfrage
@@ -382,3 +478,4 @@ gh project item-edit --project-id PVT_kwHOAPwPQ84BAP7z --id ITEM_ID --field-id P
 4. **Offline-First denken** – Lokaler Cache vor Remote
 5. **Dokumentieren, was relevant ist** – Aber nicht überdokumentieren
 6. **Issue-Referenzen in Commits** – Änderungen immer im Project tracken
+7. **Session-Logs erstellen** – Jede Session im Sprint-Issue dokumentieren
