@@ -1,9 +1,9 @@
 <!--
   Artellico - Dashboard (Home Page)
   
-  Landing page showing recent notes, quick actions, and statistics.
-  Features: Embedded QuickEdit editor with marginalia, tags, and autosave on blur.
-  Notes list with multiple view modes and lazy loading.
+  Landing page showing recent notes with view options.
+  Clicking a note opens the inline EditorCore.
+  "New Note" card links to /editor for new notes.
 -->
 
 <script lang="ts">
@@ -12,30 +12,11 @@
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 	import { createI18n } from '$stores/i18n.svelte';
-	import type { MarginaliaNote } from '$lib/types';
 	import EditorCore from '$lib/components/editor/EditorCore.svelte';
 	
 	let { data }: { data: PageData } = $props();
 	
 	const i18n = createI18n();
-	
-	// QuickEdit editor state
-	let editorContainer: HTMLElement;
-	let quickEditor: any = $state(null);
-	let isEditorActive = $state(false);
-	let isEditorLoading = $state(false);
-	let quickNoteTitle = $state('');
-	let saveStatus = $state<'saved' | 'saving' | 'unsaved' | 'idle'>('idle');
-	
-	// Marginalia state (for QuickEdit editor)
-	let marginalia = $state<MarginaliaNote[]>([]);
-	let draggingMarginaliaId = $state<string | null>(null);
-	let showContextMenu = $state(false);
-	let contextMenuPosition = $state({ x: 0, y: 0 });
-	let contextMenuTargetId = $state<string | null>(null);
-	
-	// Tags state (for QuickEdit)
-	let tags = $state<string[]>([]);
 	
 	// Notes list state
 	type ViewMode = 'list' | 'grid-small' | 'grid-large' | 'expanded';
@@ -54,10 +35,9 @@
 	};
 	
 	let notes = $state<NoteItem[]>([]);
-	// Track if notes have been initialized from server data
 	let notesInitialized = $state(false);
 	
-	// Initialize notes from server data (using $effect to avoid state_referenced_locally)
+	// Initialize notes from server data
 	$effect(() => {
 		if (!notesInitialized && data.recentNotes) {
 			notes = data.recentNotes as NoteItem[];
@@ -162,8 +142,7 @@
 			// Already expanded, go to full editor
 			goto(`/editor/${noteId}`);
 		} else {
-			// Close previous expanded editor
-			await closeExpandedEditor();
+			// Expand this note
 			expandedNoteId = noteId;
 		}
 	}
@@ -171,111 +150,6 @@
 	// Close expanded editor
 	async function closeExpandedEditor() {
 		expandedNoteId = null;
-	}
-	
-	// Reference Import/Export Dialog State
-	let showReferenceDialog = $state(false);
-	let referenceDialogMode = $state<'import' | 'export'>('import');
-	let referenceFormat = $state<'bibtex' | 'csv' | 'excel'>('bibtex');
-	// noinspection JSUnusedLocalSymbols - used by bind:this
-	let _referenceFileInput = $state<HTMLInputElement | undefined>(undefined);
-	let importedReferences = $state<any[]>([]);
-	
-	// Open reference import dialog
-	function openReferenceImport() {
-		referenceDialogMode = 'import';
-		showReferenceDialog = true;
-	}
-	
-	// Open reference export dialog
-	function openReferenceExport() {
-		referenceDialogMode = 'export';
-		showReferenceDialog = true;
-	}
-	
-	// Close reference dialog
-	function closeReferenceDialog() {
-		showReferenceDialog = false;
-		importedReferences = [];
-	}
-	
-	// Handle file selection for import
-	async function handleReferenceFileSelect(event: Event) {
-		const input = event.target as HTMLInputElement;
-		if (!input.files?.length) return;
-		
-		const file = input.files[0];
-		const text = await file.text();
-		
-		try {
-			if (referenceFormat === 'bibtex') {
-				const { parseBibtex } = await import('$lib/services/referenceParser');
-				importedReferences = parseBibtex(text);
-			} else if (referenceFormat === 'csv') {
-				const { parseCsv } = await import('$lib/services/referenceParser');
-				importedReferences = parseCsv(text);
-			}
-		} catch (err) {
-			console.error('Failed to parse references:', err);
-		}
-	}
-	
-	// Save imported references to database
-	async function saveImportedReferences() {
-		for (const ref of importedReferences) {
-			try {
-				await fetch('/api/literature', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(ref),
-				});
-			} catch (err) {
-				console.error('Failed to save reference:', err);
-			}
-		}
-		closeReferenceDialog();
-	}
-	
-	// Export references
-	async function exportReferences() {
-		try {
-			const response = await fetch('/api/literature');
-			if (!response.ok) throw new Error('Failed to fetch references');
-			
-			const { items } = await response.json();
-			const { exportToBibtex, exportToCsv, exportToExcel } = await import('$lib/services/referenceParser');
-			
-			let content: string | Blob;
-			let filename: string;
-			let mimeType: string;
-			
-			if (referenceFormat === 'bibtex') {
-				content = exportToBibtex(items);
-				filename = 'references.bib';
-				mimeType = 'application/x-bibtex';
-			} else if (referenceFormat === 'csv') {
-				content = exportToCsv(items);
-				filename = 'references.csv';
-				mimeType = 'text/csv';
-			} else {
-				content = await exportToExcel(items);
-				filename = 'references.xlsx';
-				mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-			}
-			
-			// Download file
-			const blob = content instanceof Blob ? content : new Blob([content], { type: mimeType });
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement('a');
-			a.href = url;
-			a.download = filename;
-			a.click();
-			URL.revokeObjectURL(url);
-			
-			closeReferenceDialog();
-		} catch (err) {
-			console.error('Export failed:', err);
-		}
 	}
 	
 	// Extract text preview from Editor.js content
@@ -295,179 +169,15 @@
 		return '';
 	}
 	
-	// Initialize QuickEdit editor on focus
-	async function activateEditor() {
-		if (quickEditor || isEditorLoading || !browser) return;
-		
-		isEditorLoading = true;
-		
-		try {
-			const EditorJS = (await import('@editorjs/editorjs')).default;
-			const Header = (await import('@editorjs/header')).default;
-			const List = (await import('@editorjs/list')).default;
-			const Quote = (await import('@editorjs/quote')).default;
-			// @ts-expect-error No type declarations available
-			const DragDrop = (await import('editorjs-drag-drop')).default;
-			
-			quickEditor = new EditorJS({
-				holder: editorContainer,
-				placeholder: i18n.t('editor.placeholder'),
-				autofocus: true,
-				minHeight: 100,
-				tools: {
-					header: {
-						// @ts-expect-error Editor.js types
-						class: Header,
-						config: { levels: [2, 3, 4], defaultLevel: 2 },
-					},
-					list: {
-						// @ts-expect-error Editor.js types
-						class: List,
-						inlineToolbar: true,
-					},
-					quote: { class: Quote, inlineToolbar: true },
-				},
-				onChange: () => {
-					saveStatus = 'unsaved';
-				},
-				onReady: () => {
-					new DragDrop(quickEditor);
-				},
-			});
-			
-			isEditorActive = true;
-		} catch (err) {
-			console.error('Failed to initialize quick editor:', err);
-		} finally {
-			isEditorLoading = false;
-		}
-	}
-	
-	// Context menu helpers (for QuickEdit marginalia)
-	function deleteMarginalia(id: string) {
-		marginalia = marginalia.filter(m => m.id !== id);
-		closeContextMenu();
-		saveStatus = 'unsaved';
-	}
-	
-	function closeContextMenu() {
-		showContextMenu = false;
-		contextMenuTargetId = null;
-	}
-	
-	function handleMarginaliaDrag(e: MouseEvent) {
-		if (!draggingMarginaliaId) return;
-		// Drag handling for QuickEdit marginalia
-		void e;
-	}
-	
-	function handleMarginaliaDragEnd() {
-		if (draggingMarginaliaId) {
-			draggingMarginaliaId = null;
-			saveStatus = 'unsaved';
-		}
-	}
-	
-	// Autosave on blur (offline-first)
-	async function handleEditorBlur(e: FocusEvent) {
-		// Check if focus moved outside the notes section
-		const relatedTarget = e.relatedTarget as HTMLElement | null;
-		const notesSection = (e.currentTarget as HTMLElement);
-		
-		if (relatedTarget && notesSection?.contains(relatedTarget)) {
-			return; // Focus still within section
-		}
-		
-		// Only save if there's actual content
-		if (saveStatus === 'unsaved' && quickEditor) {
-			const content = await quickEditor.save();
-			const hasContent = content.blocks && content.blocks.length > 0 && 
-				content.blocks.some((block: any) => {
-					const text = block.data?.text || '';
-					return text.trim().length > 0;
-				});
-			
-			if (hasContent) {
-				await saveToCache();
-			} else {
-				// No content - reset editor without saving
-				saveStatus = 'idle';
-			}
-		}
-	}
-	
-	// Save to local cache (offline-first)
-	async function saveToCache() {
-		if (!quickEditor) return;
-		
-		saveStatus = 'saving';
-		
-		try {
-			const content = await quickEditor.save();
-			const noteData = {
-				title: quickNoteTitle || i18n.t('editor.untitled'),
-				content,
-				tags,
-				marginalia,
-				noteId: null,
-			};
-			
-			// Save to IndexedDB first
-			if (browser) {
-				const { saveNoteToCache } = await import('$stores/offline');
-				await saveNoteToCache(noteData);
-			}
-			
-			// Sync to server (non-blocking)
-			fetch('/api/notes', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(noteData),
-			}).catch(err => console.warn('Server sync pending:', err));
-			
-			saveStatus = 'saved';
-		} catch {
-			saveStatus = 'unsaved';
-		}
-	}
-	
-	// Expand to full editor
-	async function expandToFullEditor() {
-		if (saveStatus === 'unsaved' && quickEditor) {
-			await saveToCache();
-		}
-		goto('/editor');
-	}
-	
 	// Keyboard shortcuts
 	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape') {
-			if (showContextMenu) {
-				closeContextMenu();
-			} else if (expandedNoteId) {
-				closeExpandedEditor();
-			}
-		}
-	}
-	
-	// Handle click outside expanded editor to close it
-	function handleEditorClickOutside(event: MouseEvent) {
-		const target = event.target as HTMLElement;
-		// Check if click is outside the inline-editor-wrapper
-		if (expandedNoteId && !target.closest('.inline-editor-wrapper')) {
+		if (event.key === 'Escape' && expandedNoteId) {
 			closeExpandedEditor();
 		}
 	}
 	
 	// Cleanup on unmount
 	onMount(() => {
-		const handleClickOutside = (e: MouseEvent) => {
-			if (showContextMenu && !(e.target as HTMLElement).closest('.context-menu')) {
-				closeContextMenu();
-			}
-		};
-		document.addEventListener('click', handleClickOutside);
-		
 		// Setup intersection observer for infinite scroll
 		let observer: IntersectionObserver | null = null;
 		
@@ -489,23 +199,16 @@
 		setTimeout(setupObserver, 100);
 		
 		return () => {
-			quickEditor?.destroy();
-			document.removeEventListener('click', handleClickOutside);
 			observer?.disconnect();
 		};
 	});
 </script>
 
-<svelte:window 
-	onkeydown={handleKeydown}
-	onmousemove={handleMarginaliaDrag}
-	onmouseup={handleMarginaliaDragEnd}
-/>
+<svelte:window onkeydown={handleKeydown} />
 
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_click_events_have_key_events -->
-<div class="dashboard" onclick={handleEditorClickOutside} onkeypress={() => {}} role="main">
+<div class="dashboard" role="main">
 	<!-- Notes List with View Options -->
-	<section class="notes-section" onblur={handleEditorBlur}>
+	<section class="notes-section">
 		<div class="notes-header">
 			<h2 class="section-title">{i18n.t('dashboard.recentNotes')}</h2>
 			
@@ -606,53 +309,19 @@
 			</div>
 		</div>
 		
-		<!-- Notes grid/list - QuickEdit is always first -->
-		<div class="notes-container" class:list-view={viewMode === 'list'} class:grid-small={viewMode === 'grid-small'} class:grid-large={viewMode === 'grid-large'} class:expanded-view={viewMode === 'expanded'} class:has-expanded-editor={isEditorActive && (viewMode === 'grid-small' || viewMode === 'grid-large')}>
+		<!-- Notes grid/list -->
+		<div class="notes-container" class:list-view={viewMode === 'list'} class:grid-small={viewMode === 'grid-small'} class:grid-large={viewMode === 'grid-large'} class:expanded-view={viewMode === 'expanded'}>
 			
-			<!-- First card is always the new note editor -->
-			<div 
-				class="note-card new-note-card"
-				class:active={isEditorActive}
-				class:expanded={isEditorActive && (viewMode === 'grid-small' || viewMode === 'grid-large')}
-			>
-				<div 
-					class="quick-edit-editor"
-					bind:this={editorContainer}
-					onfocus={activateEditor}
-					onclick={activateEditor}
-					onkeydown={(e) => e.key === 'Enter' && !isEditorActive && activateEditor()}
-					role="textbox"
-					tabindex="0"
-				>
-					{#if !isEditorActive && !isEditorLoading}
-						<span class="quick-edit-placeholder">{i18n.t('editor.placeholder')}</span>
-					{/if}
-					{#if isEditorLoading}
-						<span class="quick-edit-loading">...</span>
-					{/if}
+			<!-- First card: New Note Link -->
+			<a href="/editor" class="note-card new-note-card">
+				<div class="new-note-content">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+						<line x1="12" y1="5" x2="12" y2="19"/>
+						<line x1="5" y1="12" x2="19" y2="12"/>
+					</svg>
+					<span class="new-note-label">{i18n.t('action.newNote')}</span>
 				</div>
-				
-				{#if isEditorActive}
-					<div class="quick-edit-footer">
-						<span class="save-indicator" class:saved={saveStatus === 'saved'} class:saving={saveStatus === 'saving'}>
-							{#if saveStatus === 'saved'}
-								{i18n.t('editor.saved')}
-							{:else if saveStatus === 'saving'}
-								{i18n.t('editor.saving')}
-							{:else if saveStatus === 'unsaved'}
-								●
-							{/if}
-						</span>
-						<button 
-							type="button"
-							class="btn btn-ghost btn-sm"
-							onclick={expandToFullEditor}
-						>
-							{i18n.t('editor.fullscreen')}
-						</button>
-					</div>
-				{/if}
-			</div>
+			</a>
 			
 			<!-- Existing notes -->
 			{#each sortedNotes() as note (note.id)}
@@ -666,15 +335,15 @@
 							initialContent={note.content}
 							initialTags={note.tags || []}
 							initialMarginalia={[]}
-							onSave={async (data) => {
+							onSave={async (noteData) => {
 								try {
 									const response = await fetch(`/api/notes/${note.id}`, {
 										method: 'PUT',
 										headers: { 'Content-Type': 'application/json' },
 										body: JSON.stringify({
-											title: data.title || i18n.t('editor.untitled'),
-											content: data.content,
-											tags: data.tags,
+											title: noteData.title || i18n.t('editor.untitled'),
+											content: noteData.content,
+											tags: noteData.tags,
 										}),
 									});
 									if (response.ok) {
@@ -683,9 +352,9 @@
 										if (noteIndex >= 0) {
 											notes[noteIndex] = {
 												...notes[noteIndex],
-												title: data.title,
-												content: data.content,
-												tags: data.tags,
+												title: noteData.title,
+												content: noteData.content,
+												tags: noteData.tags,
 												updated_at: new Date().toISOString(),
 											};
 										}
@@ -749,195 +418,27 @@
 				{/if}
 			</div>
 		{/if}
-	</section>
-	
-	<!-- Reference Import/Export Dialog -->
-	{#if showReferenceDialog}
-		<div class="modal-backdrop" onclick={closeReferenceDialog} onkeydown={(e) => e.key === 'Escape' && closeReferenceDialog()} role="presentation">
-			<div class="modal-dialog" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === 'Escape' && closeReferenceDialog()}>
-				<header class="modal-header">
-					<h2 class="modal-title">
-						{referenceDialogMode === 'import' ? i18n.t('references.import') : i18n.t('references.export')}
-					</h2>
-					<button type="button" class="modal-close" onclick={closeReferenceDialog} aria-label={i18n.t('action.close')}>
-						×
-					</button>
-				</header>
-				
-				<div class="modal-body">
-					<!-- Format selection -->
-					<fieldset class="form-group">
-						<legend class="form-label">{i18n.t('references.format')}</legend>
-						<div class="format-options" role="radiogroup">
-							<label class="format-option">
-								<input type="radio" bind:group={referenceFormat} value="bibtex" id="format-bibtex" />
-								<span>BibTeX (.bib)</span>
-							</label>
-							<label class="format-option">
-								<input type="radio" bind:group={referenceFormat} value="csv" id="format-csv" />
-								<span>CSV (.csv)</span>
-							</label>
-							<label class="format-option">
-								<input type="radio" bind:group={referenceFormat} value="excel" id="format-excel" />
-								<span>Excel (.xlsx)</span>
-							</label>
-						</div>
-					</fieldset>
-					
-					{#if referenceDialogMode === 'import'}
-						<!-- File input for import -->
-						<div class="form-group">
-							<label class="form-label" for="reference-file-input">{i18n.t('references.selectFile')}</label>
-							<input 
-								type="file" 
-								id="reference-file-input"
-								bind:this={_referenceFileInput}
-								accept={referenceFormat === 'bibtex' ? '.bib,.bibtex' : referenceFormat === 'csv' ? '.csv' : '.xlsx,.xls'}
-								onchange={handleReferenceFileSelect}
-								class="file-input"
-							/>
-						</div>
-						
-						<!-- Preview imported references -->
-						{#if importedReferences.length > 0}
-							<div class="import-preview">
-								<h4>{importedReferences.length} {i18n.t('references.found')}</h4>
-								<ul class="reference-list">
-									{#each importedReferences.slice(0, 5) as ref}
-										<li class="reference-item">
-											<strong>{ref.title}</strong>
-											{#if ref.authors?.length}
-												<span class="reference-authors">{ref.authors.join(', ')}</span>
-											{/if}
-											{#if ref.year}
-												<span class="reference-year">({ref.year})</span>
-											{/if}
-										</li>
-									{/each}
-									{#if importedReferences.length > 5}
-										<li class="reference-item more">+{importedReferences.length - 5} {i18n.t('references.more')}</li>
-									{/if}
-								</ul>
-							</div>
-						{/if}
-					{:else}
-						<!-- Export info -->
-						<p class="export-info">{i18n.t('references.exportInfo')}</p>
-					{/if}
-				</div>
-				
-				<footer class="modal-footer">
-					<button type="button" class="btn btn-ghost" onclick={closeReferenceDialog}>
-						{i18n.t('action.cancel')}
-					</button>
-					{#if referenceDialogMode === 'import'}
-						<button 
-							type="button" 
-							class="btn btn-primary" 
-							onclick={saveImportedReferences}
-							disabled={importedReferences.length === 0}
-						>
-							{i18n.t('references.importSelected')}
-						</button>
-					{:else}
-						<button type="button" class="btn btn-primary" onclick={exportReferences}>
-							{i18n.t('references.exportNow')}
-						</button>
-					{/if}
-				</footer>
+		
+		<!-- Empty State -->
+		{#if notes.length === 0 && notesInitialized}
+			<div class="empty-state">
+				<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+					<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+					<polyline points="14 2 14 8 20 8"/>
+				</svg>
+				<p>{i18n.t('notes.empty')}</p>
+				<a href="/editor" class="btn btn-primary">{i18n.t('action.createFirst')}</a>
 			</div>
-		</div>
-	{/if}
-	
-	<!-- Context menu for marginalia -->
-	{#if showContextMenu}
-		<div 
-			class="context-menu"
-			style="left: {contextMenuPosition.x}px; top: {contextMenuPosition.y}px"
-		>
-			<button 
-				type="button"
-				class="context-menu-item"
-				onclick={() => contextMenuTargetId && deleteMarginalia(contextMenuTargetId)}
-			>
-				{i18n.t('action.delete')}
-			</button>
-		</div>
-	{/if}
+		{/if}
+	</section>
 </div>
 
 <style>
-	/* QuickEdit Editor inside new note card */
-	.quick-edit-editor {
-		flex: 1;
-		min-height: 60px;
-		font-family: var(--font-human);
-		font-size: var(--font-size-base);
-		color: var(--color-text);
-		cursor: text;
-		outline: none;
-	}
-	
-	.quick-edit-placeholder,
-	.quick-edit-loading {
-		color: var(--color-text-muted);
-		font-style: italic;
-	}
-	
-	.quick-edit-footer {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding-top: var(--space-3);
-		border-top: 1px solid var(--color-border-subtle);
-		margin-top: var(--space-3);
-	}
-	
-	.save-indicator {
-		font-family: var(--font-machine);
-		font-size: var(--font-size-xs);
-		color: var(--color-text-muted);
-	}
-	
-	.save-indicator.saved { color: var(--color-success); }
-	.save-indicator.saving { color: var(--color-warning); }
-	
-	/* Editor.js overrides */
-	.quick-edit-editor :global(.codex-editor__redactor) {
-		padding-bottom: var(--space-2) !important;
-	}
-	
-	.quick-edit-editor :global(.ce-block__content) {
-		max-width: 100%;
-	}
-	
-	/* Context menu */
-	.context-menu {
-		position: fixed;
-		background: var(--color-bg-elevated);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-md);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-		z-index: var(--z-dropdown);
-		min-width: 100px;
-	}
-	
-	.context-menu-item {
-		display: block;
-		width: 100%;
-		padding: var(--space-2) var(--space-3);
-		text-align: left;
-		font-family: var(--font-machine);
-		font-size: var(--font-size-sm);
-		color: var(--color-text);
-		background: transparent;
-		border: none;
-		cursor: pointer;
-	}
-	
-	.context-menu-item:hover {
-		background: var(--color-bg-hover);
-		color: var(--color-error);
+	/* Dashboard */
+	.dashboard {
+		padding: var(--space-6);
+		max-width: 1400px;
+		margin: 0 auto;
 	}
 	
 	/* Notes Section */
@@ -952,6 +453,16 @@
 		justify-content: space-between;
 		gap: var(--space-3);
 		margin-bottom: var(--space-4);
+	}
+	
+	.section-title {
+		font-family: var(--font-machine);
+		font-size: var(--font-size-xs);
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--color-text-muted);
+		margin: 0;
 	}
 	
 	.notes-controls {
@@ -1074,12 +585,51 @@
 		border-color: var(--color-active);
 	}
 	
+	/* New note card - special styling */
+	.new-note-card {
+		border-style: dashed;
+		justify-content: center;
+		align-items: center;
+		min-height: 100px;
+	}
+	
+	.new-note-card:hover {
+		border-style: solid;
+		background: var(--color-bg-hover);
+	}
+	
+	.new-note-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-2);
+		color: var(--color-text-muted);
+	}
+	
+	.new-note-card:hover .new-note-content {
+		color: var(--color-active);
+	}
+	
+	.new-note-label {
+		font-family: var(--font-machine);
+		font-size: var(--font-size-sm);
+	}
+	
 	/* List view - all same height */
 	.list-view .note-card {
 		flex-direction: row;
 		align-items: center;
 		gap: var(--space-4);
 		min-height: 48px;
+	}
+	
+	.list-view .new-note-card {
+		flex-direction: row;
+		min-height: 48px;
+	}
+	
+	.list-view .new-note-content {
+		flex-direction: row;
 	}
 	
 	.list-view .note-card-header {
@@ -1227,170 +777,25 @@
 		grid-column: 1 / -1;
 	}
 	
-	/* Modal Dialog */
-	.modal-backdrop {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.5);
+	/* Empty State */
+	.empty-state {
 		display: flex;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		z-index: 1000;
-	}
-	
-	.modal-dialog {
-		background: var(--color-bg);
-		border-radius: var(--radius-lg);
-		box-shadow: var(--shadow-lg);
-		max-width: 500px;
-		width: 90%;
-		max-height: 80vh;
-		display: flex;
-		flex-direction: column;
-	}
-	
-	.modal-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: var(--space-4);
-		border-bottom: 1px solid var(--color-border-subtle);
-	}
-	
-	.modal-title {
-		font-family: var(--font-human);
-		font-size: var(--font-size-lg);
-		font-weight: 600;
-		color: var(--color-text);
-		margin: 0;
-	}
-	
-	.modal-close {
-		background: transparent;
-		border: none;
-		font-size: var(--font-size-xl);
+		padding: var(--space-12);
+		text-align: center;
 		color: var(--color-text-muted);
-		cursor: pointer;
-		line-height: 1;
 	}
 	
-	.modal-close:hover {
-		color: var(--color-text);
-	}
-	
-	.modal-body {
-		padding: var(--space-4);
-		overflow-y: auto;
-	}
-	
-	.modal-footer {
-		display: flex;
-		justify-content: flex-end;
-		gap: var(--space-2);
-		padding: var(--space-4);
-		border-top: 1px solid var(--color-border-subtle);
-	}
-	
-	/* Form elements */
-	.form-group {
+	.empty-state svg {
 		margin-bottom: var(--space-4);
+		opacity: 0.5;
 	}
 	
-	.form-label {
-		display: block;
-		font-family: var(--font-machine);
-		font-size: var(--font-size-sm);
-		font-weight: 500;
-		color: var(--color-text);
-		margin-bottom: var(--space-2);
-	}
-	
-	.format-options {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-2);
-	}
-	
-	.format-option {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		font-family: var(--font-machine);
-		font-size: var(--font-size-sm);
-		color: var(--color-text-secondary);
-		cursor: pointer;
-	}
-	
-	.format-option:hover {
-		color: var(--color-text);
-	}
-	
-	.file-input {
-		width: 100%;
-		padding: var(--space-2);
-		font-family: var(--font-machine);
-		font-size: var(--font-size-sm);
-		color: var(--color-text);
-		background: var(--color-bg-sunken);
-		border: 1px dashed var(--color-border);
-		border-radius: var(--radius-md);
-	}
-	
-	.import-preview {
-		background: var(--color-bg-sunken);
-		border-radius: var(--radius-md);
-		padding: var(--space-3);
-	}
-	
-	.import-preview h4 {
-		font-family: var(--font-machine);
-		font-size: var(--font-size-sm);
-		font-weight: 500;
-		color: var(--color-text);
-		margin: 0 0 var(--space-2);
-	}
-	
-	.reference-list {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-	}
-	
-	.reference-item {
-		padding: var(--space-2) 0;
-		border-bottom: 1px solid var(--color-border-subtle);
-		font-family: var(--font-machine);
-		font-size: var(--font-size-xs);
-	}
-	
-	.reference-item:last-child {
-		border-bottom: none;
-	}
-	
-	.reference-item strong {
-		display: block;
-		color: var(--color-text);
-		margin-bottom: var(--space-1);
-	}
-	
-	.reference-authors {
-		color: var(--color-text-secondary);
-	}
-	
-	.reference-year {
-		color: var(--color-text-muted);
-		margin-left: var(--space-1);
-	}
-	
-	.reference-item.more {
-		font-style: italic;
-		color: var(--color-text-muted);
-	}
-	
-	.export-info {
-		font-family: var(--font-machine);
-		font-size: var(--font-size-sm);
-		color: var(--color-text-secondary);
-		margin: 0;
+	.empty-state p {
+		font-family: var(--font-human);
+		font-size: var(--font-size-base);
+		margin: 0 0 var(--space-4);
 	}
 </style>

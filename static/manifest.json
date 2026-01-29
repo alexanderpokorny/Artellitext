@@ -31,7 +31,7 @@
 			"name": "Neue Notiz",
 			"short_name": "Notiz",
 			"description": "Eine neue Notiz erstellen",
-			"url": "/editor"
+			"url": "/editor/new"
 		}
 	],
 	"related_applications": [],
