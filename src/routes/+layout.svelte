@@ -85,7 +85,7 @@
 	// Navigation items
 	const mainNav = [
 		{ href: '/', icon: 'dashboard', label: 'nav.dashboard' },
-		{ href: '/editor', icon: 'edit', label: 'nav.knowledge' },
+		{ href: '/wissen', icon: 'edit', label: 'nav.knowledge' },
 		{ href: '/literatur', icon: 'book', label: 'nav.literature' },
 	];
 	

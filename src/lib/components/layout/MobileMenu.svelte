@@ -31,7 +31,7 @@
 	// Navigation items
 	const navItems = [
 		{ href: '/', label: 'nav.dashboard' },
-		{ href: '/editor', label: 'nav.knowledge' },
+		{ href: '/wissen', label: 'nav.knowledge' },
 		{ href: '/literatur', label: 'nav.literature' },
 		{ href: '/recent', label: 'nav.recent' },
 		{ href: '/tags', label: 'nav.tags' },
