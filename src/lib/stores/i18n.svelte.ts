@@ -213,7 +213,6 @@ export const translations = {
 		
 		// Text Statistics
 		'stats.counts': 'Zählungen',
-		'stats.words': 'Wörter',
 		'stats.characters': 'Zeichen',
 		'stats.sentences': 'Sätze',
 		'stats.paragraphs': 'Absätze',
@@ -433,7 +432,6 @@ export const translations = {
 		
 		// Text Statistics
 		'stats.counts': 'Counts',
-		'stats.words': 'Words',
 		'stats.characters': 'Characters',
 		'stats.sentences': 'Sentences',
 		'stats.paragraphs': 'Paragraphs',
@@ -653,7 +651,6 @@ export const translations = {
 		
 		// Text Statistics
 		'stats.counts': 'Comptages',
-		'stats.words': 'Mots',
 		'stats.characters': 'Caractères',
 		'stats.sentences': 'Phrases',
 		'stats.paragraphs': 'Paragraphes',
@@ -870,7 +867,6 @@ export const translations = {
 		
 		// Text Statistics
 		'stats.counts': 'Recuentos',
-		'stats.words': 'Palabras',
 		'stats.characters': 'Caracteres',
 		'stats.sentences': 'Oraciones',
 		'stats.paragraphs': 'Párrafos',
@@ -1090,7 +1086,6 @@ export const translations = {
 		
 		// Text Statistics
 		'stats.counts': 'Conteggi',
-		'stats.words': 'Parole',
 		'stats.characters': 'Caratteri',
 		'stats.sentences': 'Frasi',
 		'stats.paragraphs': 'Paragrafi',

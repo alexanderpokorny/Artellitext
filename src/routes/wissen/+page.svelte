@@ -18,9 +18,9 @@
 	type ViewMode = 'list' | 'grid-small' | 'grid-large';
 	let viewMode = $state<ViewMode>('grid-small');
 	
-	// Sorting - derived from data
-	const sortBy = $derived(data.sort.by);
-	const sortOrder = $derived(data.sort.order);
+	// Sorting - from data (read-only, changes via URL)
+	const currentSortBy = $derived(data.sort.by);
+	const currentSortOrder = $derived(data.sort.order);
 	
 	// Expanded note editor
 	let expandedNoteId = $state<string | null>(null);
@@ -94,13 +94,11 @@
 	
 	// Handle sort change
 	function handleSortChange(newSortBy: string) {
-		if (sortBy === newSortBy) {
-			sortOrder = sortOrder === 'desc' ? 'asc' : 'desc';
-		} else {
-			sortBy = newSortBy;
-			sortOrder = 'desc';
+		let newOrder = 'desc';
+		if (currentSortBy === newSortBy) {
+			newOrder = currentSortOrder === 'desc' ? 'asc' : 'desc';
 		}
-		goto(`/wissen?sort=${sortBy}&order=${sortOrder}`);
+		goto(`/wissen?sort=${newSortBy}&order=${newOrder}`);
 	}
 </script>
 
@@ -165,7 +163,7 @@
 			<!-- Sort Dropdown -->
 			<select
 				class="sort-select"
-				value={sortBy}
+				value={currentSortBy}
 				onchange={(e) => handleSortChange(e.currentTarget.value)}
 			>
 				<option value="updated_at">{i18n.t('sort.updated')}</option>
@@ -237,7 +235,7 @@
 	{#if data.pagination.totalPages > 1}
 		<nav class="pagination" aria-label="Pagination">
 			{#if data.pagination.page > 1}
-				<a href="/wissen?page={data.pagination.page - 1}&sort={sortBy}&order={sortOrder}" class="pagination-btn">
+				<a href="/wissen?page={data.pagination.page - 1}&sort={currentSortBy}&order={currentSortOrder}" class="pagination-btn">
 					← {i18n.t('pagination.prev')}
 				</a>
 			{/if}
@@ -247,7 +245,7 @@
 			</span>
 			
 			{#if data.pagination.hasMore}
-				<a href="/wissen?page={data.pagination.page + 1}&sort={sortBy}&order={sortOrder}" class="pagination-btn">
+				<a href="/wissen?page={data.pagination.page + 1}&sort={currentSortBy}&order={currentSortOrder}" class="pagination-btn">
 					{i18n.t('pagination.next')} →
 				</a>
 			{/if}
