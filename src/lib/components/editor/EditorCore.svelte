@@ -1042,16 +1042,18 @@
 		/* No max-height - editor grows with content */
 	}
 	
-	/* Fullscreen mode sizing */
+	/* Fullscreen mode sizing - fixed layout with internal scroll */
 	.editor-core.fullscreen-mode {
 		height: 100%;
 		border: none;
 		border-radius: 0;
+		display: flex;
+		flex-direction: column;
 	}
 	
-	/* Dark mode */
+	/* Dark mode - use #242424 as main editor background */
 	:global(html.dark) .editor-core {
-		background: var(--color-bg-sunken);
+		background: #242424;
 	}
 	
 	/* Header */
@@ -1063,6 +1065,11 @@
 		z-index: 10;
 		background: var(--color-bg-sunken);
 		border-bottom: 1px solid var(--color-border-subtle);
+	}
+	
+	:global(html.dark) .editor-core-header {
+		background: #242424;
+		border-bottom-color: #333;
 	}
 	
 	.header-center {
@@ -1077,7 +1084,8 @@
 	}
 	
 	:global(html.dark) .header-center {
-		background: var(--color-bg-sunken);
+		background: #1a1a1a;
+		border-color: #333;
 	}
 	
 	.title-input {
@@ -1182,12 +1190,13 @@
 		grid-template-columns: var(--margin-column-width) 1fr var(--tag-column-width);
 		flex: 1;
 		overflow: visible;  /* No internal scrolling - page scrolls */
+		min-height: 0; /* Allow flex item to shrink */
 	}
 	
-	/* Fullscreen mode needs scrolling within body */
+	/* Fullscreen mode - fixed sidebars, scrolling content */
 	.editor-core.fullscreen-mode .editor-core-body {
-		overflow-y: auto;
-		overflow-x: hidden;
+		overflow: hidden;
+		position: relative;
 	}
 	
 	/* Main editor area */
@@ -1197,10 +1206,20 @@
 		justify-content: center;
 		background: var(--color-bg-elevated);
 		min-height: 100%;
+		border-left: 1px solid var(--color-border-subtle);
+		border-right: 1px solid var(--color-border-subtle);
+	}
+	
+	/* Fullscreen mode: editor-main scrolls internally */
+	.editor-core.fullscreen-mode .editor-main {
+		overflow-y: auto;
+		overflow-x: hidden;
+		max-height: 100%;
 	}
 	
 	:global(html.dark) .editor-main {
-		background: var(--color-bg-sunken);
+		background: #1a1a1a;
+		border-color: #333;
 	}
 	
 	.editor-container {

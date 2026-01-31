@@ -74,12 +74,22 @@
 		height: 100%;
 	}
 	
+	/* Dark mode tab bar background */
+	:global(html.dark) .sidebar-tabs-standalone {
+		background: #242424;
+	}
+	
 	.sidebar-tabs-standalone.left {
 		border-right: 1px solid var(--color-border-subtle);
 	}
 	
 	.sidebar-tabs-standalone.right {
 		border-left: 1px solid var(--color-border-subtle);
+	}
+	
+	:global(html.dark) .sidebar-tabs-standalone.left,
+	:global(html.dark) .sidebar-tabs-standalone.right {
+		border-color: #333;
 	}
 	
 	.sidebar-tab {
@@ -118,12 +128,22 @@
 		overflow: hidden;
 	}
 	
+	/* Dark mode sidebar background */
+	:global(html.dark) .editor-sidebar {
+		background: #242424;
+	}
+	
 	.editor-sidebar.left {
 		border-right: 1px solid var(--color-border-subtle);
 	}
 	
 	.editor-sidebar.right {
 		border-left: 1px solid var(--color-border-subtle);
+	}
+	
+	:global(html.dark) .editor-sidebar.left,
+	:global(html.dark) .editor-sidebar.right {
+		border-color: #333;
 	}
 	
 	.sidebar-content {

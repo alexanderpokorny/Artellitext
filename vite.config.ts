@@ -13,6 +13,10 @@ export default defineConfig({
 		fs: {
 			// Allow serving files from static folder (fonts)
 			allow: ['..']
+		},
+		// Ignore source maps for problematic packages
+		sourcemapIgnoreList: (sourcePath) => {
+			return sourcePath.includes('node_modules/@editorjs');
 		}
 	},
 	
@@ -36,7 +40,15 @@ export default defineConfig({
 	build: {
 		target: 'ES2022',
 		sourcemap: true,
+		// Ignore source map warnings for problematic packages
 		rollupOptions: {
+			onwarn(warning, warn) {
+				// Suppress source map warnings for EditorJS
+				if (warning.code === 'SOURCEMAP_ERROR' && warning.message?.includes('@editorjs')) {
+					return;
+				}
+				warn(warning);
+			},
 			output: {
 				// Optimize font loading by keeping them as separate assets
 				assetFileNames: (assetInfo) => {

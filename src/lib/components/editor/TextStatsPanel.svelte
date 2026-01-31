@@ -212,6 +212,11 @@
 		border-radius: var(--radius-sm);
 	}
 	
+	/* Dark mode: darker boxes for stats */
+	:global(html.dark) .stat-item {
+		background: #1a1a1a;
+	}
+	
 	.stat-value {
 		font-family: var(--font-mono);
 		font-size: var(--font-size-lg);
@@ -232,6 +237,11 @@
 		background: var(--color-bg-sunken);
 		border-radius: var(--radius-md);
 		margin-bottom: var(--space-3);
+	}
+	
+	/* Dark mode: darker boxes */
+	:global(html.dark) .readability-main {
+		background: #1a1a1a;
 	}
 	
 	.readability-score {
@@ -317,6 +327,11 @@
 		background: var(--color-bg-sunken);
 		border-radius: var(--radius-sm);
 		transition: background var(--transition-fast);
+	}
+	
+	/* Dark mode: darker boxes */
+	:global(html.dark) .quality-item {
+		background: #1a1a1a;
 	}
 	
 	.quality-item.warning {

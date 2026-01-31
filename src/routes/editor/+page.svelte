@@ -85,6 +85,6 @@
 	}
 	
 	:global(html.dark) .editor-fullscreen-page {
-		background: #000;
+		background: #242424;
 	}
 </style>
