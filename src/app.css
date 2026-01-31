@@ -2589,27 +2589,49 @@ html.high-contrast .tag {
 }
 /* ===========================================
    EDITOR.JS UI OVERRIDES
-   Minimal styling - don't hide functional elements
+   Artellico Dark Theme - Inspired by Mantine palette
+   
+   Color Reference (Dark Mode):
+   - Background Main: #1A1B1E (dark-7)
+   - Background Elevated: #25262B (dark-6)
+   - Background Hover: #2C2E33 (dark-5)
+   - Border: #373A40 (dark-4)
+   - Text Primary: #C1C2C5 (dark-0)
+   - Text Secondary: #909296 (dark-2)
    =========================================== */
 
-/* Plus button - keep visible but subtle */
-.ce-toolbar__plus {
-	opacity: 0.5;
-	transition: opacity 0.15s ease;
-}
-
-/* Hide the shortcut hint bubble next to plus button */
+/* Hide tooltips and shortcut hints */
+.ct,
+.ct__content,
+.codex-editor__tooltip,
+.ce-toolbox__tooltip,
 .ce-toolbar__plus-shortcut {
 	display: none !important;
 }
 
-.ce-toolbar__plus:hover {
-	opacity: 1;
+/* Plus button styling */
+.ce-toolbar__plus {
+	color: #5C5F66 !important;
+	opacity: 0.7;
+	transition: opacity 0.15s ease, color 0.15s ease;
 }
 
-/* Toolbar actions (settings/move buttons) */
+.ce-toolbar__plus:hover {
+	opacity: 1;
+	color: #909296 !important;
+}
+
+html.dark .ce-toolbar__plus {
+	color: #5C5F66 !important;
+}
+
+html.dark .ce-toolbar__plus:hover {
+	color: #C1C2C5 !important;
+}
+
+/* Toolbar actions */
 .ce-toolbar__actions {
-	opacity: 0.4;
+	opacity: 0.5;
 	transition: opacity 0.15s ease;
 }
 
@@ -2618,116 +2640,130 @@ html.high-contrast .tag {
 	opacity: 1;
 }
 
-/* Settings gear button */
 .ce-toolbar__settings-btn {
-	opacity: 0.5;
-	transition: opacity 0.15s ease;
+	color: #5C5F66 !important;
+	transition: color 0.15s ease;
 }
 
 .ce-toolbar__settings-btn:hover {
-	opacity: 1;
+	color: #909296 !important;
+}
+
+html.dark .ce-toolbar__settings-btn:hover {
+	color: #C1C2C5 !important;
 }
 
 /* ===========================================
-   POPOVER / SLASH MENU STYLING
+   SLASH MENU / POPOVER
+   Main dropdown when typing "/"
    =========================================== */
 
-/* Main popover - the slash menu */
 .ce-popover {
+	font-family: var(--font-machine) !important;
 	background: #ffffff !important;
-	border: 1px solid #e0e0e0 !important;
-	border-radius: 12px !important;
-	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
-	z-index: 10000 !important;
+	border: 1px solid #e5e7eb !important;
+	border-radius: 8px !important;
+	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12) !important;
+	padding: 6px !important;
 	min-width: 280px !important;
-	max-width: 340px !important;
-	padding: 8px !important;
+	max-width: 320px !important;
+	max-height: 400px !important;
 	overflow: hidden !important;
+	z-index: 10000 !important;
 }
 
 html.dark .ce-popover {
-	background: #1e1e1e !important;
-	border-color: #333 !important;
-	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+	background: #1A1B1E !important;
+	border-color: #373A40 !important;
+	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5) !important;
 }
 
-/* Popover items container */
+/* Popover items scroll container */
 .ce-popover__items {
-	max-height: 380px !important;
+	max-height: 350px !important;
 	overflow-y: auto !important;
+	padding: 2px !important;
 }
 
-/* Search field in popover */
+/* Search input in popover */
+.ce-popover__search,
 .ce-popover-header {
 	padding: 4px 4px 8px !important;
-	border-bottom: 1px solid #eee !important;
-	margin-bottom: 8px !important;
+	margin-bottom: 4px !important;
 }
 
-html.dark .ce-popover-header {
-	border-bottom-color: #333 !important;
-}
-
+.ce-popover__search input,
 .ce-popover-header__input,
 .cdx-search-field__input {
 	width: 100% !important;
-	padding: 10px 12px !important;
-	font-size: 14px !important;
+	padding: 8px 12px !important;
+	font-family: var(--font-machine) !important;
+	font-size: 13px !important;
 	color: #1a1a1a !important;
-	background: #f5f5f5 !important;
-	border: 1px solid #e0e0e0 !important;
-	border-radius: 8px !important;
+	background: #f3f4f6 !important;
+	border: 1px solid #e5e7eb !important;
+	border-radius: 6px !important;
 	outline: none !important;
+	transition: border-color 0.15s ease !important;
 }
 
+html.dark .ce-popover__search input,
 html.dark .ce-popover-header__input,
 html.dark .cdx-search-field__input {
-	background: #2a2a2a !important;
-	border-color: #404040 !important;
-	color: #e5e5e5 !important;
+	color: #C1C2C5 !important;
+	background: #25262B !important;
+	border-color: #373A40 !important;
 }
 
+.ce-popover__search input:focus,
 .ce-popover-header__input:focus,
 .cdx-search-field__input:focus {
-	border-color: #3b82f6 !important;
+	border-color: var(--color-active) !important;
 }
 
-.ce-popover-header__input::placeholder {
-	color: #999 !important;
+.ce-popover__search input::placeholder,
+.ce-popover-header__input::placeholder,
+.cdx-search-field__input::placeholder {
+	color: #9ca3af !important;
 }
 
-html.dark .ce-popover-header__input::placeholder {
-	color: #666 !important;
+html.dark .ce-popover__search input::placeholder,
+html.dark .ce-popover-header__input::placeholder,
+html.dark .cdx-search-field__input::placeholder {
+	color: #5C5F66 !important;
 }
 
-/* Popover item (each tool in the menu) */
+/* Menu item (each tool option) */
 .ce-popover-item {
 	display: flex !important;
 	align-items: center !important;
-	gap: 12px !important;
+	gap: 10px !important;
 	width: 100% !important;
-	padding: 10px 12px !important;
-	font-size: 14px !important;
-	color: #1a1a1a !important;
+	padding: 6px 8px !important;
+	margin: 1px 0 !important;
+	font-family: var(--font-machine) !important;
+	font-size: 13px !important;
+	color: #1f2937 !important;
 	background: transparent !important;
 	border: none !important;
-	border-radius: 8px !important;
+	border-radius: 4px !important;
 	cursor: pointer !important;
+	text-align: left !important;
 	transition: background 0.1s ease !important;
 }
 
 html.dark .ce-popover-item {
-	color: #e5e5e5 !important;
+	color: #C1C2C5 !important;
 }
 
 .ce-popover-item:hover,
 .ce-popover-item--focused {
-	background: #f0f0f0 !important;
+	background: #f3f4f6 !important;
 }
 
 html.dark .ce-popover-item:hover,
 html.dark .ce-popover-item--focused {
-	background: #2a2a2a !important;
+	background: #25262B !important;
 }
 
 /* Icon container */
@@ -2735,128 +2771,79 @@ html.dark .ce-popover-item--focused {
 	display: flex !important;
 	align-items: center !important;
 	justify-content: center !important;
-	width: 36px !important;
-	height: 36px !important;
-	background: #f0f0f0 !important;
-	border: 1px solid #e0e0e0 !important;
-	border-radius: 8px !important;
+	width: 28px !important;
+	height: 28px !important;
 	flex-shrink: 0 !important;
+	background: #f3f4f6 !important;
+	border-radius: 4px !important;
+	border: none !important;
 }
 
 html.dark .ce-popover-item__icon {
-	background: #2a2a2a !important;
-	border-color: #404040 !important;
+	background: #25262B !important;
 }
 
 .ce-popover-item__icon svg {
-	width: 20px !important;
-	height: 20px !important;
-	color: #666 !important;
+	width: 16px !important;
+	height: 16px !important;
+	color: #6b7280 !important;
 }
 
 html.dark .ce-popover-item__icon svg {
-	color: #aaa !important;
+	color: #909296 !important;
 }
 
-/* Title and description */
+.ce-popover-item:hover .ce-popover-item__icon,
+.ce-popover-item--focused .ce-popover-item__icon {
+	background: #e5e7eb !important;
+}
+
+html.dark .ce-popover-item:hover .ce-popover-item__icon,
+html.dark .ce-popover-item--focused .ce-popover-item__icon {
+	background: #373A40 !important;
+}
+
+.ce-popover-item:hover .ce-popover-item__icon svg,
+.ce-popover-item--focused .ce-popover-item__icon svg {
+	color: #374151 !important;
+}
+
+html.dark .ce-popover-item:hover .ce-popover-item__icon svg,
+html.dark .ce-popover-item--focused .ce-popover-item__icon svg {
+	color: #C1C2C5 !important;
+}
+
+/* Item title */
 .ce-popover-item__title {
 	font-weight: 500 !important;
+	color: inherit !important;
 	line-height: 1.3 !important;
 }
 
+/* Item description (secondary text) */
 .ce-popover-item__secondary-title {
-	font-size: 12px !important;
-	color: #888 !important;
-	margin-top: 2px !important;
+	display: block !important;
+	font-size: 11px !important;
+	font-weight: 400 !important;
+	color: #9ca3af !important;
+	margin-top: 1px !important;
+	line-height: 1.2 !important;
 }
 
 html.dark .ce-popover-item__secondary-title {
-	color: #666 !important;
+	color: #5C5F66 !important;
 }
 
 /* Category separator */
-.ce-popover-item-separator {
-	padding: 12px 12px 6px !important;
-	font-size: 11px !important;
-	font-weight: 600 !important;
-	text-transform: uppercase !important;
-	letter-spacing: 0.05em !important;
-	color: #888 !important;
-}
-
-html.dark .ce-popover-item-separator {
-	color: #555 !important;
-}
-
-/* Nothing found */
-.ce-popover__nothing-found-message {
-	padding: 20px !important;
-	text-align: center !important;
-	color: #888 !important;
-	font-size: 14px !important;
-}
-
-/* ===========================================
-   HIDE TOOLTIPS ONLY (not functional elements)
-   =========================================== */
-.ct,
-.ct__content,
-.codex-editor__tooltip,
-.ce-toolbox__tooltip {
-	display: none !important;
-}
-
-/* Popover search field */
-.ce-popover__search {
-	margin-bottom: 8px;
-	padding: 0 4px;
-}
-
-.ce-popover__search input,
-.cdx-search-field__input {
-	width: 100%;
-	padding: 8px 12px !important;
-	font-family: var(--font-machine) !important;
-	font-size: 14px !important;
-	color: #1a1a1a !important;
-	background: #f5f5f5 !important;
-	border: 1px solid #e0e0e0 !important;
-	border-radius: 6px !important;
-	outline: none !important;
-}
-
-html.dark .ce-popover__search input,
-html.dark .cdx-search-field__input {
-	background: #1a1a1a !important;
-	border-color: #404040 !important;
-	color: #e5e5e5 !important;
-}
-
-.ce-popover__search input:focus,
-.cdx-search-field__input:focus {
-	border-color: var(--color-active) !important;
-}
-
-.ce-popover__search input::placeholder,
-.cdx-search-field__input::placeholder {
-	color: #999 !important;
-}
-
-html.dark .ce-popover__search input::placeholder,
-html.dark .cdx-search-field__input::placeholder {
-	color: #666 !important;
-}
-
-/* Category labels (Basic, Advanced, etc.) */
 .ce-popover-item-separator,
 .ce-popover-item-separator__line {
 	font-family: var(--font-machine) !important;
-	font-size: 11px !important;
+	font-size: 10px !important;
 	font-weight: 600 !important;
 	text-transform: uppercase !important;
 	letter-spacing: 0.05em !important;
-	color: #888 !important;
-	padding: 12px 12px 6px !important;
+	color: #9ca3af !important;
+	padding: 10px 8px 4px !important;
 	margin: 0 !important;
 	border: none !important;
 	background: transparent !important;
@@ -2864,123 +2851,20 @@ html.dark .cdx-search-field__input::placeholder {
 
 html.dark .ce-popover-item-separator,
 html.dark .ce-popover-item-separator__line {
-	color: #666 !important;
-}
-
-/* Popover item (tool button in slash menu) - Docmost style */
-.ce-popover-item {
-	display: flex !important;
-	align-items: center !important;
-	gap: 12px !important;
-	width: 100% !important;
-	padding: 8px 12px !important;
-	font-family: var(--font-machine) !important;
-	font-size: 14px !important;
-	color: #1a1a1a !important;
-	background: transparent !important;
-	border: none !important;
-	border-radius: 6px !important;
-	cursor: pointer !important;
-	text-align: left !important;
-	transition: background 0.15s ease !important;
-}
-
-html.dark .ce-popover-item {
-	color: #e5e5e5 !important;
-}
-
-.ce-popover-item:hover,
-.ce-popover-item--focused {
-	background: #f0f0f0 !important;
-}
-
-html.dark .ce-popover-item:hover,
-html.dark .ce-popover-item--focused {
-	background: #333333 !important;
-}
-
-/* Tool icon container - rounded square like Docmost */
-.ce-popover-item__icon {
-	display: flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 32px !important;
-	height: 32px !important;
-	flex-shrink: 0 !important;
-	background: #f0f0f0 !important;
-	border-radius: 6px !important;
-	border: 1px solid #e0e0e0 !important;
-}
-
-html.dark .ce-popover-item__icon {
-	background: #1a1a1a !important;
-	border-color: #404040 !important;
-}
-
-.ce-popover-item__icon svg {
-	width: 18px !important;
-	height: 18px !important;
-	color: #666 !important;
-}
-
-html.dark .ce-popover-item__icon svg {
-	color: #999 !important;
-}
-
-.ce-popover-item:hover .ce-popover-item__icon svg {
-	color: #333 !important;
-}
-
-html.dark .ce-popover-item:hover .ce-popover-item__icon svg {
-	color: #fff !important;
-}
-
-/* Tool title and description */
-.ce-popover-item__title {
-	font-weight: 500 !important;
-	color: inherit !important;
-	flex: 1 !important;
-	line-height: 1.3 !important;
-}
-
-.ce-popover-item__secondary-title {
-	display: block !important;
-	font-family: var(--font-machine) !important;
-	font-size: 12px !important;
-	font-weight: 400 !important;
-	color: #888 !important;
-	margin-top: 2px !important;
-	line-height: 1.3 !important;
-}
-
-html.dark .ce-popover-item__secondary-title {
-	color: #666 !important;
+	color: #5C5F66 !important;
 }
 
 /* Nothing found message */
 .ce-popover__nothing-found-message {
 	font-family: var(--font-machine) !important;
-	font-size: 14px !important;
-	color: #888 !important;
+	font-size: 13px !important;
+	color: #9ca3af !important;
 	text-align: center !important;
-	padding: 24px 16px !important;
+	padding: 20px 16px !important;
 }
 
 html.dark .ce-popover__nothing-found-message {
-	color: #666 !important;
-}
-
-/* Deprecated: Old popover item styling (for compatibility) */
-.ce-popover__item {
-	color: inherit;
-}
-
-.ce-popover__item:hover {
-	background: #f0f0f0;
-}
-
-html.dark .ce-popover__item:hover {
-	background: #333;
+	color: #5C5F66 !important;
 }
 
 /* DragDrop handles - from editorjs-drag-drop */
@@ -3064,111 +2948,177 @@ html.dark .ce-popover__item:hover {
 	color: var(--color-text-secondary);
 }
 
-html:not(.dark) .ce-toolbar__actions {
-	opacity: 0.6;
-}
+/* ===========================================
+   SETTINGS MENU (block tune menu)
+   =========================================== */
 
-html:not(.dark) .ce-block:hover .ce-toolbar__actions {
-	opacity: 1;
-}
-
-/* Block tune wrapper (settings menu) */
 .ce-settings {
+	font-family: var(--font-machine) !important;
 	background: #ffffff !important;
-	border: 1px solid #e5e5e5 !important;
+	border: 1px solid #e5e7eb !important;
 	border-radius: 8px !important;
 	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12) !important;
-	z-index: 1000 !important;
-	padding: 8px !important;
+	z-index: 10000 !important;
+	padding: 6px !important;
 }
 
 html.dark .ce-settings {
-	background: #262626 !important;
-	border-color: #404040 !important;
-	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4) !important;
+	background: #1A1B1E !important;
+	border-color: #373A40 !important;
+	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5) !important;
 }
 
 .ce-settings__button {
-	color: #1a1a1a !important;
-	padding: 8px 12px !important;
-	border-radius: 6px !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	width: 100% !important;
+	padding: 6px 10px !important;
+	font-family: var(--font-machine) !important;
+	font-size: 13px !important;
+	color: #1f2937 !important;
+	background: transparent !important;
+	border: none !important;
+	border-radius: 4px !important;
+	cursor: pointer !important;
+	transition: background 0.1s ease !important;
 }
 
 html.dark .ce-settings__button {
-	color: #e5e5e5 !important;
+	color: #C1C2C5 !important;
 }
 
 .ce-settings__button:hover {
-	background: #f0f0f0 !important;
+	background: #f3f4f6 !important;
 }
 
 html.dark .ce-settings__button:hover {
-	background: #333 !important;
+	background: #25262B !important;
 }
 
 .ce-settings__button--delete:hover {
 	color: var(--color-error) !important;
+	background: rgba(239, 68, 68, 0.1) !important;
 }
 
-/* Inline toolbar styling */
+/* ===========================================
+   INLINE TOOLBAR (text selection)
+   =========================================== */
+
 .ce-inline-toolbar {
+	font-family: var(--font-machine) !important;
 	background: #ffffff !important;
-	border: 1px solid #e5e5e5 !important;
-	border-radius: 8px !important;
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
-	z-index: 1000 !important;
+	border: 1px solid #e5e7eb !important;
+	border-radius: 6px !important;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12) !important;
+	z-index: 10000 !important;
+	padding: 2px !important;
 }
 
 html.dark .ce-inline-toolbar {
-	background: #262626 !important;
-	border-color: #404040 !important;
+	background: #1A1B1E !important;
+	border-color: #373A40 !important;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5) !important;
 }
 
 .ce-inline-tool {
-	color: #1a1a1a !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 28px !important;
+	height: 28px !important;
+	color: #4b5563 !important;
+	background: transparent !important;
+	border: none !important;
+	border-radius: 4px !important;
+	cursor: pointer !important;
+	transition: background 0.1s ease, color 0.1s ease !important;
 }
 
 html.dark .ce-inline-tool {
-	color: #e5e5e5 !important;
+	color: #909296 !important;
 }
 
 .ce-inline-tool:hover {
-	background: #f0f0f0 !important;
+	background: #f3f4f6 !important;
+	color: #1f2937 !important;
 }
 
 html.dark .ce-inline-tool:hover {
-	background: #333 !important;
+	background: #25262B !important;
+	color: #C1C2C5 !important;
 }
 
 .ce-inline-tool--active {
 	color: var(--color-active) !important;
+	background: rgba(59, 130, 246, 0.1) !important;
 }
 
-/* Conversion toolbar */
+.ce-inline-tool svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+/* ===========================================
+   CONVERSION TOOLBAR (block type changer)
+   =========================================== */
+
 .ce-conversion-toolbar {
+	font-family: var(--font-machine) !important;
 	background: #ffffff !important;
-	border: 1px solid #e5e5e5 !important;
+	border: 1px solid #e5e7eb !important;
 	border-radius: 8px !important;
 	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12) !important;
+	z-index: 10000 !important;
+	padding: 6px !important;
 }
 
 html.dark .ce-conversion-toolbar {
-	background: #262626 !important;
-	border-color: #404040 !important;
+	background: #1A1B1E !important;
+	border-color: #373A40 !important;
+	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5) !important;
 }
 
 .ce-conversion-tool {
-	color: #1a1a1a !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	padding: 6px 10px !important;
+	font-size: 13px !important;
+	color: #1f2937 !important;
+	background: transparent !important;
+	border: none !important;
+	border-radius: 4px !important;
+	cursor: pointer !important;
+	transition: background 0.1s ease !important;
 }
 
 html.dark .ce-conversion-tool {
-	color: #e5e5e5 !important;
+	color: #C1C2C5 !important;
 }
 
 .ce-conversion-tool:hover {
-	background: #f0f0f0 !important;
+	background: #f3f4f6 !important;
 }
 
 html.dark .ce-conversion-tool:hover {
-	background: #333 !important;
+	background: #25262B !important;
+}
+
+.ce-conversion-tool__icon {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 24px !important;
+	height: 24px !important;
+	color: #6b7280 !important;
+}
+
+html.dark .ce-conversion-tool__icon {
+	color: #909296 !important;
+}
+
+.ce-conversion-tool__icon svg {
+	width: 16px !important;
+	height: 16px !important;
 }
