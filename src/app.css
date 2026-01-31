@@ -2589,17 +2589,28 @@ html.high-contrast .tag {
 }
 /* ===========================================
    EDITOR.JS UI OVERRIDES
+   Minimal styling - don't hide functional elements
    =========================================== */
 
-/* Plus button - hidden, use slash command instead */
+/* Plus button - keep visible but subtle */
 .ce-toolbar__plus {
+	opacity: 0.5;
+	transition: opacity 0.15s ease;
+}
+
+/* Hide the shortcut hint bubble next to plus button */
+.ce-toolbar__plus-shortcut {
 	display: none !important;
 }
 
-/* Toolbar actions (settings/move buttons) - show on block hover */
+.ce-toolbar__plus:hover {
+	opacity: 1;
+}
+
+/* Toolbar actions (settings/move buttons) */
 .ce-toolbar__actions {
-	opacity: 0.3;
-	transition: opacity var(--transition-fast);
+	opacity: 0.4;
+	transition: opacity 0.15s ease;
 }
 
 .ce-block--focused .ce-toolbar__actions,
@@ -2607,28 +2618,10 @@ html.high-contrast .tag {
 	opacity: 1;
 }
 
-/* ===========================================
-   OLD TOOLBOX (pre 2.26) - COMPLETELY HIDDEN
-   The new popover system is used instead
-   =========================================== */
-.ce-toolbox,
-.ce-toolbox--opened,
-.ce-toolbox__search,
-.ce-toolbox__button,
-.ce-toolbox__button-title {
-	display: none !important;
-	visibility: hidden !important;
-	opacity: 0 !important;
-	pointer-events: none !important;
-	width: 0 !important;
-	height: 0 !important;
-}
-
-/* Settings gear button (block tune button) - visible on hover */
+/* Settings gear button */
 .ce-toolbar__settings-btn {
-	display: flex !important;
-	opacity: 0.4;
-	transition: opacity var(--transition-fast);
+	opacity: 0.5;
+	transition: opacity 0.15s ease;
 }
 
 .ce-toolbar__settings-btn:hover {
@@ -2636,82 +2629,181 @@ html.high-contrast .tag {
 }
 
 /* ===========================================
-   NEW POPOVER SYSTEM (EditorJS 2.26+)
-   Slash command menu - Docmost Dark Style
+   POPOVER / SLASH MENU STYLING
    =========================================== */
 
-/* Main popover container */
+/* Main popover - the slash menu */
 .ce-popover {
 	background: #ffffff !important;
-	border: 1px solid #d0d0d0 !important;
+	border: 1px solid #e0e0e0 !important;
 	border-radius: 12px !important;
-	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
 	z-index: 10000 !important;
 	min-width: 280px !important;
-	max-width: 320px !important;
-	max-height: 400px !important;
+	max-width: 340px !important;
 	padding: 8px !important;
-	overflow: visible !important;
-	position: absolute !important;
+	overflow: hidden !important;
 }
 
-/* Dark mode popover - solid dark background like Docmost */
 html.dark .ce-popover {
-	background: #1f1f1f !important;
-	border-color: #3a3a3a !important;
-	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+	background: #1e1e1e !important;
+	border-color: #333 !important;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
 }
 
-/* Popover inner wrapper */
-.ce-popover__custom-content,
-.ce-popover__container {
-	background: inherit !important;
-	padding: 0 !important;
-	border-radius: inherit !important;
-}
-
-/* Popover items scroll container */
+/* Popover items container */
 .ce-popover__items {
-	display: flex !important;
-	flex-direction: column !important;
-	gap: 2px !important;
-	background: inherit !important;
-	max-height: 340px !important;
+	max-height: 380px !important;
 	overflow-y: auto !important;
-	padding: 4px 0 !important;
 }
 
-/* CRITICAL: Hide ALL EditorJS tooltips and hint popups */
+/* Search field in popover */
+.ce-popover-header {
+	padding: 4px 4px 8px !important;
+	border-bottom: 1px solid #eee !important;
+	margin-bottom: 8px !important;
+}
+
+html.dark .ce-popover-header {
+	border-bottom-color: #333 !important;
+}
+
+.ce-popover-header__input,
+.cdx-search-field__input {
+	width: 100% !important;
+	padding: 10px 12px !important;
+	font-size: 14px !important;
+	color: #1a1a1a !important;
+	background: #f5f5f5 !important;
+	border: 1px solid #e0e0e0 !important;
+	border-radius: 8px !important;
+	outline: none !important;
+}
+
+html.dark .ce-popover-header__input,
+html.dark .cdx-search-field__input {
+	background: #2a2a2a !important;
+	border-color: #404040 !important;
+	color: #e5e5e5 !important;
+}
+
+.ce-popover-header__input:focus,
+.cdx-search-field__input:focus {
+	border-color: #3b82f6 !important;
+}
+
+.ce-popover-header__input::placeholder {
+	color: #999 !important;
+}
+
+html.dark .ce-popover-header__input::placeholder {
+	color: #666 !important;
+}
+
+/* Popover item (each tool in the menu) */
+.ce-popover-item {
+	display: flex !important;
+	align-items: center !important;
+	gap: 12px !important;
+	width: 100% !important;
+	padding: 10px 12px !important;
+	font-size: 14px !important;
+	color: #1a1a1a !important;
+	background: transparent !important;
+	border: none !important;
+	border-radius: 8px !important;
+	cursor: pointer !important;
+	transition: background 0.1s ease !important;
+}
+
+html.dark .ce-popover-item {
+	color: #e5e5e5 !important;
+}
+
+.ce-popover-item:hover,
+.ce-popover-item--focused {
+	background: #f0f0f0 !important;
+}
+
+html.dark .ce-popover-item:hover,
+html.dark .ce-popover-item--focused {
+	background: #2a2a2a !important;
+}
+
+/* Icon container */
+.ce-popover-item__icon {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 36px !important;
+	height: 36px !important;
+	background: #f0f0f0 !important;
+	border: 1px solid #e0e0e0 !important;
+	border-radius: 8px !important;
+	flex-shrink: 0 !important;
+}
+
+html.dark .ce-popover-item__icon {
+	background: #2a2a2a !important;
+	border-color: #404040 !important;
+}
+
+.ce-popover-item__icon svg {
+	width: 20px !important;
+	height: 20px !important;
+	color: #666 !important;
+}
+
+html.dark .ce-popover-item__icon svg {
+	color: #aaa !important;
+}
+
+/* Title and description */
+.ce-popover-item__title {
+	font-weight: 500 !important;
+	line-height: 1.3 !important;
+}
+
+.ce-popover-item__secondary-title {
+	font-size: 12px !important;
+	color: #888 !important;
+	margin-top: 2px !important;
+}
+
+html.dark .ce-popover-item__secondary-title {
+	color: #666 !important;
+}
+
+/* Category separator */
+.ce-popover-item-separator {
+	padding: 12px 12px 6px !important;
+	font-size: 11px !important;
+	font-weight: 600 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.05em !important;
+	color: #888 !important;
+}
+
+html.dark .ce-popover-item-separator {
+	color: #555 !important;
+}
+
+/* Nothing found */
+.ce-popover__nothing-found-message {
+	padding: 20px !important;
+	text-align: center !important;
+	color: #888 !important;
+	font-size: 14px !important;
+}
+
+/* ===========================================
+   HIDE TOOLTIPS ONLY (not functional elements)
+   =========================================== */
 .ct,
 .ct__content,
-.ct--shown,
-.ct--bottom,
-.ct--top,
-[data-tooltip]::before,
-[data-tooltip]::after,
-.ce-toolbar__tooltip,
-.ce-popover-item__hint,
-.cdx-tooltip,
-.ce-hint,
-.ce-hint__description,
-.tippy-box,
-.tippy-content,
-[role="tooltip"],
-.codex-editor .ct,
 .codex-editor__tooltip,
-.ce-toolbox__tooltip,
-.cdx-notifies,
-.cdx-notify,
-.ce-popover-item-html {
+.ce-toolbox__tooltip {
 	display: none !important;
-	visibility: hidden !important;
-	opacity: 0 !important;
-	pointer-events: none !important;
-	width: 0 !important;
-	height: 0 !important;
-	overflow: hidden !important;
-	position: absolute !important;
-	left: -9999px !important;
 }
 
 /* Popover search field */
