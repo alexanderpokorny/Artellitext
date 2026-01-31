@@ -2723,13 +2723,163 @@ html.high-contrast .tag {
 
 /* Block settings popover */
 .ce-popover {
-	background: var(--color-bg-elevated);
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-md);
-	box-shadow: var(--shadow-lg);
-	z-index: 100;
+	background: var(--color-bg-elevated) !important;
+	border: 1px solid var(--color-border) !important;
+	border-radius: var(--radius-lg) !important;
+	box-shadow: var(--shadow-lg) !important;
+	z-index: 1000 !important;
+	min-width: 200px;
+	max-width: 320px;
+	padding: var(--space-2) !important;
 }
 
+/* Dark mode popover */
+html.dark .ce-popover {
+	background: #2a2a2a !important;
+	border-color: #404040 !important;
+}
+
+/* Popover container - the wrapper */
+.ce-popover__container {
+	background: transparent !important;
+	padding: 0 !important;
+}
+
+/* Popover items container */
+.ce-popover__items {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+}
+
+/* Popover search field */
+.ce-popover__search {
+	margin-bottom: var(--space-2);
+}
+
+.ce-popover__search input,
+.cdx-search-field__input {
+	width: 100%;
+	padding: var(--space-2) var(--space-3) !important;
+	font-family: var(--font-machine) !important;
+	font-size: var(--font-size-sm) !important;
+	color: var(--color-text) !important;
+	background: var(--color-bg) !important;
+	border: 1px solid var(--color-border) !important;
+	border-radius: var(--radius-sm) !important;
+	outline: none !important;
+}
+
+html.dark .ce-popover__search input,
+html.dark .cdx-search-field__input {
+	background: #1a1a1a !important;
+	border-color: #404040 !important;
+}
+
+.ce-popover__search input:focus,
+.cdx-search-field__input:focus {
+	border-color: var(--color-active) !important;
+}
+
+/* Category labels (Basic, Advanced, etc.) */
+.ce-popover__section-title,
+.ce-popover-item-separator__line {
+	font-family: var(--font-machine) !important;
+	font-size: var(--font-size-xs) !important;
+	font-weight: 600 !important;
+	text-transform: uppercase !important;
+	letter-spacing: var(--tracking-wider) !important;
+	color: var(--color-text-muted) !important;
+	padding: var(--space-2) var(--space-3) var(--space-1) !important;
+	margin-top: var(--space-2) !important;
+	border: none !important;
+	background: transparent !important;
+}
+
+/* Popover item (tool button in slash menu) */
+.ce-popover-item {
+	display: flex !important;
+	align-items: center !important;
+	gap: var(--space-3) !important;
+	width: 100% !important;
+	padding: var(--space-2) var(--space-3) !important;
+	font-family: var(--font-machine) !important;
+	font-size: var(--font-size-sm) !important;
+	color: var(--color-text) !important;
+	background: transparent !important;
+	border: none !important;
+	border-radius: var(--radius-sm) !important;
+	cursor: pointer !important;
+	text-align: left !important;
+	transition: background var(--transition-fast) !important;
+}
+
+.ce-popover-item:hover {
+	background: var(--color-bg-hover) !important;
+}
+
+html.dark .ce-popover-item:hover {
+	background: #333 !important;
+}
+
+.ce-popover-item--focused {
+	background: var(--color-bg-hover) !important;
+}
+
+html.dark .ce-popover-item--focused {
+	background: #333 !important;
+}
+
+/* Tool icon container */
+.ce-popover-item__icon {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 28px !important;
+	height: 28px !important;
+	flex-shrink: 0 !important;
+	background: var(--color-bg-sunken) !important;
+	border-radius: var(--radius-sm) !important;
+}
+
+html.dark .ce-popover-item__icon {
+	background: #1a1a1a !important;
+}
+
+.ce-popover-item__icon svg {
+	width: 18px !important;
+	height: 18px !important;
+	color: var(--color-text-secondary) !important;
+}
+
+.ce-popover-item:hover .ce-popover-item__icon svg {
+	color: var(--color-text) !important;
+}
+
+/* Tool title and description */
+.ce-popover-item__title {
+	font-weight: 500 !important;
+	color: var(--color-text) !important;
+	flex: 1 !important;
+}
+
+.ce-popover-item__secondary-title {
+	font-family: var(--font-machine) !important;
+	font-size: var(--font-size-xs) !important;
+	color: var(--color-text-muted) !important;
+	margin-top: 2px !important;
+}
+
+/* Nothing found message */
+.ce-popover__nothing-found-message {
+	font-family: var(--font-machine) !important;
+	font-size: var(--font-size-sm) !important;
+	color: var(--color-text-muted) !important;
+	text-align: center !important;
+	padding: var(--space-4) !important;
+}
+
+/* Deprecated: Old popover item styling (for compatibility) */
 .ce-popover__item {
 	color: var(--color-text);
 }

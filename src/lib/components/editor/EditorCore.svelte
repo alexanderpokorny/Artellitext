@@ -517,6 +517,67 @@
 			await import('katex/dist/katex.min.css');
 			await import('highlight.js/styles/github-dark.css');
 			
+			// EditorJS i18n configuration
+			const editorI18n = {
+				messages: {
+					ui: {
+						blockTunes: {
+							toggler: {
+								'Click to tune': 'Klicken zum Anpassen',
+								'or drag to move': 'oder ziehen zum Verschieben'
+							}
+						},
+						inlineToolbar: {
+							converter: {
+								'Convert to': 'Umwandeln in'
+							}
+						},
+						toolbar: {
+							toolbox: {
+								'Add': 'Hinzufügen'
+							}
+						},
+						popover: {
+							'Filter': 'Filtern',
+							'Nothing found': 'Nichts gefunden'
+						}
+					},
+					toolNames: {
+						'Text': 'Text',
+						'Heading': 'Überschrift',
+						'List': 'Liste',
+						'Checklist': 'To-do list',
+						'Quote': 'Zitat',
+						'Code': 'Code',
+						'Image': 'Bild',
+						'Bold': 'Fett',
+						'Italic': 'Kursiv',
+						'Link': 'Link',
+						'Math': 'Mathe',
+						'Mermaid': 'Diagramm',
+						'Citation': 'Zitation',
+						'Bibliography': 'Literaturverzeichnis'
+					},
+					tools: {
+						header: {
+							'Heading 1': 'Überschrift 1',
+							'Heading 2': 'Überschrift 2',
+							'Heading 3': 'Überschrift 3',
+							'Heading 4': 'Überschrift 4'
+						},
+						list: {
+							'Ordered': 'Nummerierte Liste',
+							'Unordered': 'Aufzählungsliste'
+						}
+					},
+					blockTunes: {
+						delete: { 'Delete': 'Löschen', 'Click to delete': 'Klicken zum Löschen' },
+						moveUp: { 'Move up': 'Nach oben' },
+						moveDown: { 'Move down': 'Nach unten' }
+					}
+				}
+			};
+			
 			editor = new EditorJS({
 				holder: editorContainer!,
 				data: initialContent || { blocks: [] },
@@ -524,28 +585,68 @@
 				autofocus: mode === 'fullscreen',
 				inlineToolbar: ['bold', 'italic', 'link', 'mathInline'],
 				defaultBlock: 'paragraph',
+				i18n: editorI18n,
 				tools: {
 					paragraph: {
 						// @ts-expect-error Custom tool
 						class: MathParagraph,
 						inlineToolbar: true,
+						toolbox: {
+							title: 'Text',
+							icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 6.1H3m14 5.9H3m10 5.9H3"/></svg>'
+						}
 					},
 					header: {
 						// @ts-expect-error Editor.js types
 						class: Header,
 						config: { levels: [1, 2, 3, 4], defaultLevel: 2 },
+						toolbox: [
+							{ title: 'Überschrift 1', icon: '<svg viewBox="0 0 24 24" fill="currentColor"><text x="4" y="18" font-size="14" font-weight="bold">H₁</text></svg>', data: { level: 1 } },
+							{ title: 'Überschrift 2', icon: '<svg viewBox="0 0 24 24" fill="currentColor"><text x="4" y="18" font-size="14" font-weight="bold">H₂</text></svg>', data: { level: 2 } },
+							{ title: 'Überschrift 3', icon: '<svg viewBox="0 0 24 24" fill="currentColor"><text x="4" y="18" font-size="14" font-weight="bold">H₃</text></svg>', data: { level: 3 } },
+						]
 					},
 					list: {
 						// @ts-expect-error Editor.js types
 						class: List,
 						inlineToolbar: true,
+						toolbox: {
+							title: 'Bullet list',
+							icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>'
+						}
 					},
-					quote: { class: Quote, inlineToolbar: true },
-					code: { class: CodeTool },
+					checklist: {
+						// @ts-expect-error Editor.js types - use List with ordered=false as checklist placeholder
+						class: List,
+						inlineToolbar: true,
+						toolbox: {
+							title: 'To-do list',
+							icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'
+						}
+					},
+					quote: { 
+						class: Quote, 
+						inlineToolbar: true,
+						toolbox: {
+							title: 'Zitat',
+							icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/></svg>'
+						}
+					},
+					code: { 
+						class: CodeTool,
+						toolbox: {
+							title: 'Code',
+							icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>'
+						}
+					},
 					math: {
 						// @ts-expect-error Custom tool
 						class: MathTool,
 						config: { placeholder: 'LaTeX (z.B. E = mc^2 oder \\begin{align}...)' },
+						toolbox: {
+							title: 'Mathe',
+							icon: '<svg viewBox="0 0 24 24" fill="currentColor"><text x="2" y="18" font-size="16" font-style="italic">∑</text></svg>'
+						}
 					},
 					mathInline: {
 						class: MathInlineTool,
@@ -554,16 +655,28 @@
 						// @ts-expect-error Custom tool
 						class: MermaidTool,
 						config: { placeholder: 'Mermaid diagram' },
+						toolbox: {
+							title: 'Diagramm',
+							icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>'
+						}
 					},
 					citation: {
 						// @ts-expect-error Custom tool
 						class: CitationTool,
 						config: { defaultStyle: 'apa' },
+						toolbox: {
+							title: 'Zitation',
+							icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'
+						}
 					},
 					bibliography: {
 						// @ts-expect-error Custom tool
 						class: BibliographyTool,
 						config: { defaultStyle: 'apa', defaultTitle: 'References' },
+						toolbox: {
+							title: 'Literatur',
+							icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>'
+						}
 					},
 				},
 				onChange: async () => {
@@ -1193,10 +1306,10 @@
 		min-height: 0; /* Allow flex item to shrink */
 	}
 	
-	/* Fullscreen mode - fixed sidebars, scrolling content */
+	/* Fullscreen mode - entire body scrolls together (sidebars + content) */
 	.editor-core.fullscreen-mode .editor-core-body {
-		overflow: hidden;
-		position: relative;
+		overflow-y: auto;
+		overflow-x: hidden;
 	}
 	
 	/* Main editor area */
@@ -1208,13 +1321,6 @@
 		min-height: 100%;
 		border-left: 1px solid var(--color-border-subtle);
 		border-right: 1px solid var(--color-border-subtle);
-	}
-	
-	/* Fullscreen mode: editor-main scrolls internally */
-	.editor-core.fullscreen-mode .editor-main {
-		overflow-y: auto;
-		overflow-x: hidden;
-		max-height: 100%;
 	}
 	
 	:global(html.dark) .editor-main {
